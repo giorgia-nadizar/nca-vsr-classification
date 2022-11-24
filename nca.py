@@ -1,5 +1,4 @@
 import csv
-import random
 import time
 from multiprocessing import RawArray
 
@@ -11,23 +10,29 @@ from utils import PicklePersist
 
 
 class Model(tf.keras.Model):
-  def __init__(self):
-    super().__init__()
-    self.channel_n = 21
-    self.class_n = 3
-    self.grid_size_x = 9
-    self.grid_size_y = 4
-    self.kernel_mask = np.array([[0.0, 1.0, 0.0], [1.0, 1.0, 1.0], [0.0, 1.0, 0.0]])[:, :, np.newaxis, np.newaxis]
 
+  @classmethod
+  def set1_model(cls):
+    channel_n = 21
+    class_n = 3
+    grid_size_x = 9
+    grid_size_y = 4
+    return Model(channel_n, class_n, grid_size_x, grid_size_y)
+
+  def __init__(self, channel_n: int, class_n: int, grid_size_x: int, grid_size_y: int):
+    super().__init__()
+    self.channel_n = channel_n
+    self.class_n = class_n
+    self.grid_size_x = grid_size_x
+    self.grid_size_y = grid_size_y
+    self.kernel_mask = np.array([[0.0, 1.0, 0.0], [1.0, 1.0, 1.0], [0.0, 1.0, 0.0]])[:, :, np.newaxis, np.newaxis]
     self.perceive = tf.keras.Sequential([
       Conv2D(30, 3, activation=tf.nn.relu, padding="SAME"),  # (c, 3, 3, 80)
     ])
-
     self.dmodel = tf.keras.Sequential([
       Conv2D(30, 1, activation=tf.nn.relu),  # (80, 1, 1, 80)
       Conv2D(self.channel_n, 1, activation=None, kernel_initializer=tf.zeros_initializer),  # (80, 1, 1, c)
     ])
-
     self(tf.zeros([self.class_n, self.grid_size_y, self.grid_size_x, self.channel_n]))  # dummy calls to build the model
     self.reset_diag_kernel()
 
@@ -37,15 +42,13 @@ class Model(tf.keras.Model):
 
   @tf.function
   def call(self, x):
-    # (bs, 5, 4, c) -> (bs, 5, 4, 80) -> (bs, 5, 4, 80) -> (bs, 5, 4, c)
     ds = self.dmodel(self.perceive(x))
     return ds
 
   @tf.function
   def classify(self, x):
-    # The last x layers are the classification predictions, one channel
-    # per class. Keep in mind there is no "background" class,
-    # and that any loss doesn't propagate to "dead" pixels.
+    # The last x layers are the classification predictions, one channel per class.
+    # Keep in mind there is no "background" class, and that any loss doesn't propagate to "dead" pixels.
     return x[:, :, :, -self.class_n:]
 
   @tf.function
@@ -59,7 +62,6 @@ class Node:
   def __init__(self, name, pk_self, pk_bottom, pk_left, pk_right, pk_top, perceive_bias, dmodel_kernel_1, dmodel_bias_1,
                dmodel_kernel_2, dmodel_bias_2, n_val: RawArray, e_val: RawArray, s_val: RawArray, w_val: RawArray,
                own_val: RawArray):
-
     self.name = name
     self.w_val = w_val
     self.s_val = s_val
@@ -95,7 +97,7 @@ class Node:
     return Node(name, pk_self, pk_bottom, pk_left, pk_right, pk_top, perceive_bias, dmodel_kernel_1, dmodel_bias_1,
                 dmodel_kernel_2, dmodel_bias_2, n_val, e_val, s_val, w_val, own_val)
 
-  # todo need to check correctness
+  # todo need to make it work (or remove)
   @classmethod
   def from_files(cls, name: str, path: str, n_val: RawArray, e_val: RawArray, s_val: RawArray, w_val: RawArray,
                  own_val: RawArray):
@@ -119,25 +121,7 @@ class Node:
       return next(reader)
 
   def forward(self):
-
-    # (0,0) (0,1) (0,2)
-    # (1,0) (1,1) (1,2)
-    # (2,0) (2,1) (2,2)
-    if random.random() > 1:
-      return
-
-    n, e, s, w = self.sensors()  # (15,), (15,), (15,), (15,)
-
-    # self.pk_self = self.convert(self.pk_self)
-
-    # self.pk_top = self.convert(self.pk_top)
-
-    # self.pk_right = self.convert(self.pk_right)
-
-    # self.pk_left = self.convert(self.pk_left)
-
-    # self.pk_bottom = self.convert(self.pk_bottom)
-
+    n, e, s, w = self.sensors()
     x = self.relu(self.state @ self.pk_self +
                   n @ self.pk_top +
                   e @ self.pk_right +
@@ -146,19 +130,17 @@ class Node:
 
     # update net
     x = self.relu(x @ self.dmodel_kernel_1 + self.dmodel_bias_1)  # (40,)
-
     x = x @ self.dmodel_kernel_2 + self.dmodel_bias_2  # (15,)
-
     self.state = self.state + x  # (11,)
-
     self.output()
 
-  def run(self):
+  def run(self, n_steps: int = 30, sleep: bool = True):
     print("start " + self.name)
-    for i in range(29):
+    for i in range(n_steps):
       self.forward()
       print("update %d %s" % (i, self.name))
-      time.sleep(0.1)
+      if sleep:
+        time.sleep(0.1)
     print("done " + self.name)
 
   def relu(self, x):

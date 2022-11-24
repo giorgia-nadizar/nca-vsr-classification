@@ -41,7 +41,7 @@ if __name__ == '__main__':
   for i in range(4):
     for j in range(9):
       if x[i][j] == 1:
-        node = Node.from_pickle("%d%d" % (i, j), 'params.pbz2',
+        node = Node.from_pickle("%d%d" % (i, j), 'params_set1.pbz2',
                                 vals[i - 1][j] if i > 0 else None, vals[i][j + 1] if j < 8 else None,
                                 vals[i + 1][j] if i < 3 else None, vals[i][j - 1] if j > 0 else None, vals[i][j])
         nodes.append(node)

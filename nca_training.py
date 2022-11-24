@@ -10,13 +10,15 @@ from nca import Model
 from utils import PicklePersist
 
 
-def train():
+def train(num_iterations: int = 1500, plots: bool = False):
   def to_ten_dim_label(x, y):
     y_res = np.zeros(list(x.shape) + [3])
     # broadcast y to match x shape:
     y_expanded = np.broadcast_to(y, x.T.shape).T
     y_res[x >= 0.1, y_expanded[x >= 0.1]] = 1.0
     return y_res.astype(np.float32)
+
+  model = Model.set1_model()
 
   x0 = [[0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0, 0, 0],
         [1, 0, 0, 1, 0, 0, 0, 0, 0]]
@@ -29,10 +31,6 @@ def train():
 
   y_train = np.array(list(range(3)))
   y_train = to_ten_dim_label(x_train, y_train)
-
-  num_iterations = 10
-
-  model = Model()
 
   trainer = tf.keras.optimizers.Adam()
   losses = []
@@ -65,27 +63,28 @@ def train():
     acc = tf.reduce_sum(correct * x0) / tf.reduce_sum(x0)
     accs.append(acc.numpy().item())
 
-  pl.figure(figsize=(10, 4))
-  pl.title('loss')
-  pl.xlabel('Number of steps')
-  pl.ylabel('loss')
-  pl.plot(losses, label="ca")
-  pl.legend()
-  pl.show()
+  if plots:
+    pl.figure(figsize=(10, 4))
+    pl.title('loss')
+    pl.xlabel('Number of steps')
+    pl.ylabel('loss')
+    pl.plot(losses, label="ca")
+    pl.legend()
+    pl.show()
 
-  pl.figure(figsize=(10, 4))
-  pl.title('accs')
-  pl.xlabel('Number of steps')
-  pl.ylabel('accs')
-  pl.plot(accs, label="ca")
-  pl.legend()
-  pl.show()
+    pl.figure(figsize=(10, 4))
+    pl.title('accs')
+    pl.xlabel('Number of steps')
+    pl.ylabel('accs')
+    pl.plot(accs, label="ca")
+    pl.legend()
+    pl.show()
 
   return model, losses, accs
 
 
 def train_and_pickle():
-  model, _, _ = train()
+  model, _, _ = train(plots=False)
 
   perceive_kernel, pb = model.perceive.layers[0].get_weights()
   dk1, db1 = model.dmodel.layers[0].get_weights()
@@ -102,7 +101,7 @@ def train_and_pickle():
     'pk_self': perceive_kernel[1][1][:][:],
     'pk_top': perceive_kernel[0][1][:][:]
   }
-  PicklePersist.compress_pickle('params', data=dictionary)
+  PicklePersist.compress_pickle('params_set1', data=dictionary)
 
 
 def write_model_to_files():
