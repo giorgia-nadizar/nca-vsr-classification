@@ -1,5 +1,6 @@
 import csv
 import random
+import re
 
 import matplotlib.pylab as pl
 import numpy as np
@@ -10,26 +11,39 @@ from nca import Model
 from utils import PicklePersist
 
 
-def train(num_iterations: int = 1500, plots: bool = False):
-  def to_ten_dim_label(x, y):
-    y_res = np.zeros(list(x.shape) + [3])
-    # broadcast y to match x shape:
-    y_expanded = np.broadcast_to(y, x.T.shape).T
-    y_res[x >= 0.1, y_expanded[x >= 0.1]] = 1.0
-    return y_res.astype(np.float32)
+def load_shapes_from_file(filename: str):
+  shapes = []
+  lines = open(filename, 'r').readlines()
+  for line in lines:
+    string = re.sub(r'^.*?\[', '[', line).replace(' ', '').replace('[[', '').replace(']]', '').replace('\n', '') \
+      .replace(',', '')
+    tokens = string.split('][')
+    shape = []
+    for token in tokens:
+      row = []
+      for number in token:
+        if number == '0':
+          row.append(0)
+        else:
+          row.append(1)
+      shape.append(row)
+    shapes.append(shape)
+  print(shapes)
+  return shapes
 
-  model = Model.set1_model()
 
-  x0 = [[0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0, 0, 0],
-        [1, 0, 0, 1, 0, 0, 0, 0, 0]]
-  x1 = [[0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0, 0, 0],
-        [1, 1, 1, 1, 0, 0, 0, 0, 0]]
-  x2 = [[0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 0, 0],
-        [1, 0, 1, 0, 1, 0, 1, 0, 0]]
-  x_train = [x0, x1, x2]
+def to_ten_dim_label(x, y):
+  y_res = np.zeros(list(x.shape) + [3])
+  # broadcast y to match x shape:
+  y_expanded = np.broadcast_to(y, x.T.shape).T
+  y_res[x >= 0.1, y_expanded[x >= 0.1]] = 1.0
+  return y_res.astype(np.float32)
+
+
+def train(x_train: list[list[list]], num_iterations: int = 1500, plots: bool = False):
+  model = Model.standard_model()
   x_train = np.array(x_train).astype(np.float32)
-
-  y_train = np.array(list(range(3)))
+  y_train = np.array(list(range(len(x_train))))
   y_train = to_ten_dim_label(x_train, y_train)
 
   trainer = tf.keras.optimizers.Adam()
@@ -83,8 +97,9 @@ def train(num_iterations: int = 1500, plots: bool = False):
   return model, losses, accs
 
 
-def train_and_pickle():
-  model, _, _ = train(plots=False)
+def train_and_pickle(set_number: int):
+  shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(set_number) + '.txt')
+  model, _, _ = train(shapes, plots=False)
 
   perceive_kernel, pb = model.perceive.layers[0].get_weights()
   dk1, db1 = model.dmodel.layers[0].get_weights()
@@ -101,11 +116,12 @@ def train_and_pickle():
     'pk_self': perceive_kernel[1][1][:][:],
     'pk_top': perceive_kernel[0][1][:][:]
   }
-  PicklePersist.compress_pickle('params_set1', data=dictionary)
+  PicklePersist.compress_pickle('params_set' + str(set_number), data=dictionary)
 
 
-def write_model_to_files():
-  model, losses, accs = train()
+def write_model_to_files(set_number: int):
+  shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(set_number) + '.txt')
+  model, _, _ = train(shapes, plots=False)
 
   perceive_kernel, pb = model.perceive.layers[0].get_weights()
   dk1, db1 = model.dmodel.layers[0].get_weights()

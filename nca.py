@@ -12,7 +12,7 @@ from utils import PicklePersist
 class Model(tf.keras.Model):
 
   @classmethod
-  def set1_model(cls):
+  def standard_model(cls):
     channel_n = 21
     class_n = 3
     grid_size_x = 9

@@ -1,11 +1,12 @@
 import ctypes
 import random
 import time
-import numpy as np
 from multiprocessing import RawArray
 
+import numpy as np
+
 from nca import Node
-from nca_training import train_and_pickle
+from nca_training import load_shapes_from_file
 
 
 def print_vals():
@@ -18,35 +19,36 @@ def print_vals():
 
 if __name__ == '__main__':
 
-  train_and_pickle()
+  n_steps = 20
 
-  s0 = [[0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0, 0, 0],
-        [1, 0, 0, 1, 0, 0, 0, 0, 0]]
-  s1 = [[0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0, 0, 0, 0],
-        [1, 1, 1, 1, 0, 0, 0, 0, 0]]
-  s2 = [[0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 0, 0],
-        [1, 0, 1, 0, 1, 0, 1, 0, 0]]
+  target_set = 1
+  target_shape = 0
 
-  x = s0
+  shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(target_set) + '.txt')
+
+  x = shapes[target_shape]
   # setup shared arrays
-  vals = [[None for _ in range(9)] for _ in range(4)]
-  for i in range(4):
-    for j in range(9):
+  width = len(x[0])
+  height = len(x)
+  vals = [[None for _ in range(width)] for _ in range(height)]
+  for i in range(height):
+    for j in range(width):
       if x[i][j] == 1:
         vals[i][j] = RawArray(ctypes.c_float,
                               [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                0.0, 0.0, 0.0])
 
   nodes = []
-  for i in range(4):
-    for j in range(9):
+  for i in range(height):
+    for j in range(width):
       if x[i][j] == 1:
-        node = Node.from_pickle("%d%d" % (i, j), 'params_set1.pbz2',
-                                vals[i - 1][j] if i > 0 else None, vals[i][j + 1] if j < 8 else None,
-                                vals[i + 1][j] if i < 3 else None, vals[i][j - 1] if j > 0 else None, vals[i][j])
+        node = Node.from_pickle("%d%d" % (i, j), 'params_set' + str(target_set) + '.pbz2',
+                                vals[i - 1][j] if i > 0 else None, vals[i][j + 1] if j < width - 1 else None,
+                                vals[i + 1][j] if i < height - 1 else None, vals[i][j - 1] if j > 0 else None,
+                                vals[i][j])
         nodes.append(node)
 
-  for _ in range(28):
+  for _ in range(n_steps):
     for j in range(len(nodes)):
       num = random.randint(0, len(nodes) - 1)
       node = nodes[num]
