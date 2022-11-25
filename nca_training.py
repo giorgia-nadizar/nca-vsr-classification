@@ -1,6 +1,7 @@
 import csv
 import random
 import re
+import sys
 
 import matplotlib.pylab as pl
 import numpy as np
@@ -18,6 +19,8 @@ def load_shapes_from_file(filename: str):
     string = re.sub(r'^.*?\[', '[', line).replace(' ', '').replace('[[', '').replace(']]', '').replace('\n', '') \
       .replace(',', '')
     tokens = string.split('][')
+    if len(tokens) <= 1:
+      continue
     shape = []
     for token in tokens:
       row = []
@@ -28,12 +31,11 @@ def load_shapes_from_file(filename: str):
           row.append(1)
       shape.append(row)
     shapes.append(shape)
-  print(shapes)
   return shapes
 
 
 def to_ten_dim_label(x, y):
-  y_res = np.zeros(list(x.shape) + [3])
+  y_res = np.zeros(list(x.shape) + [len(x)])
   # broadcast y to match x shape:
   y_expanded = np.broadcast_to(y, x.T.shape).T
   y_res[x >= 0.1, y_expanded[x >= 0.1]] = 1.0
@@ -41,7 +43,7 @@ def to_ten_dim_label(x, y):
 
 
 def train(x_train: list[list[list]], num_iterations: int = 1500, plots: bool = False):
-  model = Model.standard_model()
+  model = Model.standard_model(len(x_train))
   x_train = np.array(x_train).astype(np.float32)
   y_train = np.array(list(range(len(x_train))))
   y_train = to_ten_dim_label(x_train, y_train)
@@ -97,9 +99,9 @@ def train(x_train: list[list[list]], num_iterations: int = 1500, plots: bool = F
   return model, losses, accs
 
 
-def train_and_pickle(set_number: int):
+def train_and_pickle(set_number: int, num_iterations: int = 1500):
   shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(set_number) + '.txt')
-  model, _, _ = train(shapes, plots=False)
+  model, _, _ = train(shapes, num_iterations, plots=False)
 
   perceive_kernel, pb = model.perceive.layers[0].get_weights()
   dk1, db1 = model.dmodel.layers[0].get_weights()
@@ -136,8 +138,6 @@ def write_model_to_files(set_number: int):
   pk_left = perceive_kernel[1][0][:][:]
 
   with open('pk_self.csv', 'w+', newline='') as csvfile:
-    print(pk_self)
-    print()
     pk_self_csv = csv.writer(csvfile, delimiter=' ')
     pk_self_csv.writerows(pk_self)
 
@@ -158,7 +158,6 @@ def write_model_to_files(set_number: int):
     pk_left_csv.writerows(pk_left)
 
   with open('dmodel_kernel_1.csv', 'w+', newline='') as csvfile:
-    print(dk1)
     spamwriter = csv.writer(csvfile, delimiter=',')
     spamwriter.writerows(dk1)
 
@@ -167,8 +166,6 @@ def write_model_to_files(set_number: int):
     spamwriter.writerows(dk2)
 
   with open('perceive_bias.csv', 'w+', newline='') as csvfile:
-    print(pb)
-    print()
     spamwriter = csv.writer(csvfile, delimiter=',')
     spamwriter.writerow(pb)
 
@@ -179,3 +176,9 @@ def write_model_to_files(set_number: int):
   with open('dmodel_bias_2.csv', 'w+', newline='') as csvfile:
     spamwriter = csv.writer(csvfile, delimiter=',')
     spamwriter.writerow(db2)
+
+
+if __name__ == '__main__':
+  args = sys.argv[1:]
+  target_set = 1 if len(args) == 0 else args[0]
+  train_and_pickle(target_set)
