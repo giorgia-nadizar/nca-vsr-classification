@@ -10,17 +10,17 @@ from nca import Node
 from nca_training import load_shapes_from_file
 
 
-def print_vals(width, height, n_classes):
+def print_vals(width: int, height: int, n_classes: int) -> None:
   for i in range(height):
     print("".join(
-      [str(np.argmax(np.frombuffer(vals[i][j], dtype=np.float32)[-n_classes:])) if vals[i][j] is not None else '-' for j in
-       range(width)]))
+      [str(np.argmax(np.frombuffer(vals[i][j], dtype=np.float32)[-n_classes:])) if vals[i][j] is not None else '-'
+       for j in range(width)]))
   print('')
 
 
 if __name__ == '__main__':
-  target_set = 2
-  target_shape = 5
+  target_set = 1
+  target_shape = 0
   n_steps = 50
 
   args = sys.argv[1:]
