@@ -7,7 +7,7 @@ from multiprocessing import RawArray
 import numpy as np
 
 from nca import Node
-from nca_training import load_shapes_from_file
+from nca_training import load_shapes_from_file, parse_shape
 
 
 def print_vals(width: int, height: int, n_classes: int) -> None:
@@ -15,12 +15,13 @@ def print_vals(width: int, height: int, n_classes: int) -> None:
     print("".join(
       [str(np.argmax(np.frombuffer(vals[i][j], dtype=np.float32)[-n_classes:])) if vals[i][j] is not None else '-'
        for j in range(width)]))
-  print('')
 
 
 if __name__ == '__main__':
+  sleep = False
+  display_transient = False
   target_set = 1
-  target_shape = 0
+  target_shape = '0'
   n_steps = 50
 
   args = sys.argv[1:]
@@ -28,12 +29,17 @@ if __name__ == '__main__':
     if arg.startswith('set'):
       target_set = int(arg.replace('set=', ''))
     elif arg.startswith('shape'):
-      target_set = int(arg.replace('shape=', ''))
+      target_shape = arg.replace('shape=', '')
     elif arg.startswith('steps'):
-      target_set = int(arg.replace('steps=', ''))
+      n_steps = int(arg.replace('steps=', ''))
+    elif arg.startswith('sleep'):
+      sleep = arg.replace('sleep=', '').lower().startswith('t')
+    elif arg.startswith('display_transient'):
+      display_transient = arg.replace('display_transient=', '').lower().startswith('t')
 
   shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(target_set) + '.txt')
-  x = shapes[target_shape]
+  x = shapes[int(target_shape)] if target_shape.isnumeric() else parse_shape(target_shape)
+
   # setup shared arrays
   width = len(x[0])
   height = len(x)
@@ -55,10 +61,14 @@ if __name__ == '__main__':
                                 vals[i][j])
         nodes.append(node)
 
-  for _ in range(n_steps):
+  for n in range(n_steps):
     for j in range(len(nodes)):
       num = random.randint(0, len(nodes) - 1)
       node = nodes[num]
       node.forward()
-    print_vals(width, height, len(shapes))
-    time.sleep(0.1)
+    if display_transient or n == n_steps - 1:
+      print_vals(width, height, len(shapes))
+    if display_transient:
+      print('')
+    if sleep:
+      time.sleep(0.1)

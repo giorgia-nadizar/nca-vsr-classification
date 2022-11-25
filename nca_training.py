@@ -12,25 +12,31 @@ from nca import Model
 from utils import PicklePersist
 
 
+def parse_shape(line: str):
+  string = re.sub(r'^.*?\[', '[', line).replace(' ', '').replace('[[', '').replace(']]', '').replace('\n', '') \
+    .replace(',', '')
+  tokens = string.split('][')
+  if len(tokens) <= 1:
+    return None
+  shape = []
+  for token in tokens:
+    row = []
+    for number in token:
+      if number == '0':
+        row.append(0)
+      else:
+        row.append(1)
+    shape.append(row)
+  return shape
+
+
 def load_shapes_from_file(filename: str):
   shapes = []
   lines = open(filename, 'r').readlines()
   for line in lines:
-    string = re.sub(r'^.*?\[', '[', line).replace(' ', '').replace('[[', '').replace(']]', '').replace('\n', '') \
-      .replace(',', '')
-    tokens = string.split('][')
-    if len(tokens) <= 1:
-      continue
-    shape = []
-    for token in tokens:
-      row = []
-      for number in token:
-        if number == '0':
-          row.append(0)
-        else:
-          row.append(1)
-      shape.append(row)
-    shapes.append(shape)
+    shape = parse_shape(line)
+    if shape:
+      shapes.append(shape)
   return shapes
 
 
