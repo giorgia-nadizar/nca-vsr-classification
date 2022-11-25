@@ -1,5 +1,6 @@
 import ctypes
 import random
+import sys
 import time
 from multiprocessing import RawArray
 
@@ -18,14 +19,20 @@ def print_vals():
 
 
 if __name__ == '__main__':
+  target_set = 2
+  target_shape = 5
+  n_steps = 50
 
-  n_steps = 20
-
-  target_set = 1
-  target_shape = 0
+  args = sys.argv[1:]
+  for arg in args:
+    if arg.startswith('set'):
+      target_set = int(arg.replace('set=', ''))
+    elif arg.startswith('shape'):
+      target_set = int(arg.replace('shape=', ''))
+    elif arg.startswith('steps'):
+      target_set = int(arg.replace('steps=', ''))
 
   shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(target_set) + '.txt')
-
   x = shapes[target_shape]
   # setup shared arrays
   width = len(x[0])
