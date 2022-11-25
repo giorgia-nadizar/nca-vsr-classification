@@ -118,7 +118,7 @@ def train_and_pickle(set_number: int, num_iterations: int = 1500):
     'pk_self': perceive_kernel[1][1][:][:],
     'pk_top': perceive_kernel[0][1][:][:]
   }
-  PicklePersist.compress_pickle('params_set' + str(set_number), data=dictionary)
+  PicklePersist.compress_pickle('parameters/params_set' + str(set_number), data=dictionary)
 
 
 def write_model_to_files(set_number: int):

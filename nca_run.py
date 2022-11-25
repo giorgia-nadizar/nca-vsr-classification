@@ -49,7 +49,7 @@ if __name__ == '__main__':
   for i in range(height):
     for j in range(width):
       if x[i][j] == 1:
-        node = Node.from_pickle("%d%d" % (i, j), 'params_set' + str(target_set) + '.pbz2',
+        node = Node.from_pickle("%d%d" % (i, j), 'parameters/params_set' + str(target_set) + '.pbz2',
                                 vals[i - 1][j] if i > 0 else None, vals[i][j + 1] if j < width - 1 else None,
                                 vals[i + 1][j] if i < height - 1 else None, vals[i][j - 1] if j > 0 else None,
                                 vals[i][j])
