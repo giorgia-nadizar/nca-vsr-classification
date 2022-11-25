@@ -10,11 +10,11 @@ from nca import Node
 from nca_training import load_shapes_from_file
 
 
-def print_vals():
-  for i in range(4):
+def print_vals(width, height, n_classes):
+  for i in range(height):
     print("".join(
-      [str(np.argmax(np.frombuffer(vals[i][j], dtype=np.float32)[-3:])) if vals[i][j] is not None else '-' for j in
-       range(9)]))
+      [str(np.argmax(np.frombuffer(vals[i][j], dtype=np.float32)[-n_classes:])) if vals[i][j] is not None else '-' for j in
+       range(width)]))
   print('')
 
 
@@ -60,5 +60,5 @@ if __name__ == '__main__':
       num = random.randint(0, len(nodes) - 1)
       node = nodes[num]
       node.forward()
-    print_vals()
+    print_vals(width, height, len(shapes))
     time.sleep(0.1)
