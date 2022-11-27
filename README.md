@@ -10,6 +10,7 @@ To install this software you need to:
 
 ```
 git clone https://github.com/giorgia-nadizar/nca-vsr-classification.git
+cd nca-vsr-classification
 pip install -r requirements.txt
 ```
 
