@@ -1,7 +1,21 @@
 # Neural Cellular Automata for Voxel-based Soft Robot shape classification.
 
-To experiment with a classification you need to install the requirements (see the `requirements.txt` file).
-Then, you can run the `nca_run.py` file.
+This repository contains the code for training a Neural Cellular Automata (NCA) for the shape classification of Voxel-based Soft Robots (VSRs).
+
+## Installation
+
+To install this software you need to:
+1. Clone the repository
+2. Install the requirements
+
+```
+git clone https://github.com/giorgia-nadizar/nca-vsr-classification.git
+pip install -r requirements.txt
+```
+
+## Classification
+
+To perform a classification you can run the `nca_run.py` file.
 It accepts some arguments, which need to be specified in the form `arg_name=arg_value`.
 
 - `n_steps` indicates the amount of steps for the simulation (default is 50).
