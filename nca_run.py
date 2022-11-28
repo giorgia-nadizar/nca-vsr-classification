@@ -17,7 +17,7 @@ def print_vals(vals, width: int, height: int, n_classes: int) -> None:
        for j in range(width)]))
 
 
-def main(sleep: bool, display_transient: bool, target_set: int, target_shape: str, n_steps: int):
+def main(sleep: bool, display_transient: bool, target_set: int, target_shape: str, n_steps: int, deterministic: bool):
   shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(target_set) + '.txt')
   x = shapes[int(target_shape)] if target_shape.isnumeric() else parse_shape(target_shape)
 
@@ -43,10 +43,13 @@ def main(sleep: bool, display_transient: bool, target_set: int, target_shape: st
         nodes.append(node)
 
   for n in range(n_steps):
-    for j in range(len(nodes)):
-      num = random.randint(0, len(nodes) - 1)
-      node = nodes[num]
-      node.forward()
+    if deterministic:
+      Node.sync_update_all(nodes)
+    else:
+      for j in range(len(nodes)):
+        num = random.randint(0, len(nodes) - 1)
+        node = nodes[num]
+        node.forward()
     if display_transient or n == n_steps - 1:
       print_vals(vals, width, height, len(shapes))
     if display_transient:
@@ -61,6 +64,7 @@ if __name__ == '__main__':
   m_target_set = 1
   m_target_shape = '0'
   m_n_steps = 50
+  m_deterministic = True
 
   args = sys.argv[1:]
   for arg in args:
@@ -74,5 +78,7 @@ if __name__ == '__main__':
       m_sleep = arg.replace('sleep=', '').lower().startswith('t')
     elif arg.startswith('display_transient'):
       m_display_transient = arg.replace('display_transient=', '').lower().startswith('t')
+    elif arg.startswith('deterministic'):
+      m_deterministic = arg.replace('deterministic=', '').lower().startswith('t')
 
   main(m_sleep, m_display_transient, m_target_set, m_target_shape, m_n_steps)

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import csv
 import time
 from multiprocessing import RawArray
@@ -119,7 +121,14 @@ class Node:
       reader = csv.reader(f)
       return next(reader)
 
-  def forward(self):
+  @staticmethod
+  def sync_update_all(nodes: list[Node]):
+    for node in nodes:
+      node.forward(output=False)
+    for node in nodes:
+      node.output()
+
+  def forward(self, output: bool = True):
     n, e, s, w = self.sensors()
     x = self.relu(self.state @ self.pk_self +
                   n @ self.pk_top +
@@ -131,7 +140,8 @@ class Node:
     x = self.relu(x @ self.dmodel_kernel_1 + self.dmodel_bias_1)  # (40,)
     x = x @ self.dmodel_kernel_2 + self.dmodel_bias_2  # (15,)
     self.state = self.state + x  # (11,)
-    self.output()
+    if output:
+      self.output()
 
   def run(self, n_steps: int = 30, sleep: bool = True):
     print("start " + self.name)
