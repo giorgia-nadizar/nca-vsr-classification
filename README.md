@@ -25,10 +25,10 @@ It accepts some arguments, which need to be specified in the form `arg_name=arg_
 - `display_transient` indicates whether to print the entire evolution of the NCA or only the final state (default is
   false).
 - `target_set` indicates which of the considered set of shapes to use (see them in the 'shapes' folder). Takes values 1
-  to
-  3 (default is 1).
-- `target_shape` indicates either the number of the shape in the set it belongs to (0 indexed) or a custom shape (
-  defined as in the 'shapes' folder, without spaces).
+  to 3 (default is 1).
+- `target_shape` indicates either the number of the shape in the set it belongs to (0 indexed), or a custom shape. To
+  define a custom shape you can enumerate a voxel grid by rows, starting from top left, using the character '-' to
+  separate lines. A '1' corresponds to a voxel, a '0' corresponds to an empty space.
 - `deterministic` indicates whether each update step should be deterministic (synchronously updating all the nodes) or
   stochastic (update random nodes sequentially). Default value is true.
 - `pretty_print` indicates whether the classification should be printed as a VSR (where each voxel displays its
@@ -38,5 +38,5 @@ It accepts some arguments, which need to be specified in the form `arg_name=arg_
 An example run would be:
 
 ```
-python nca_run.py n_steps=20 display_transient=true target_set=1 deterministic=true pretty_print=true target_shape=[[0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0],[1,1,1,1,1,1,1,0,0],[1,0,1,0,1,0,1,0,0]]
+python nca_run.py n_steps=20 display_transient=true target_set=1 deterministic=true pretty_print=true target_shape=1111111-1010101
 ```

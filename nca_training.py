@@ -14,8 +14,8 @@ from utils import PicklePersist
 
 def parse_shape(line: str, width: int = 9, height: int = 4):
   string = re.sub(r'^.*?\[', '[', line).replace(' ', '').replace('[[', '').replace(']]', '').replace('\n', '') \
-    .replace(',', '').replace('][', '|')
-  tokens = string.split('|')
+    .replace(',', '').replace('][', '-')
+  tokens = string.split('-')
   if len(tokens) <= 1:
     return None
   shape = []
