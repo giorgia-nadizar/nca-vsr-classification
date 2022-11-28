@@ -1,5 +1,4 @@
 import ctypes
-import random
 import sys
 import time
 from multiprocessing import RawArray
@@ -46,10 +45,7 @@ def main(sleep: bool, display_transient: bool, target_set: int, target_shape: st
     if deterministic:
       Node.sync_update_all(nodes)
     else:
-      for j in range(len(nodes)):
-        num = random.randint(0, len(nodes) - 1)
-        node = nodes[num]
-        node.forward()
+      Node.stochastic_update(nodes)
     if display_transient or n == n_steps - 1:
       print_vals(vals, width, height, len(shapes))
     if display_transient:
@@ -81,4 +77,4 @@ if __name__ == '__main__':
     elif arg.startswith('deterministic'):
       m_deterministic = arg.replace('deterministic=', '').lower().startswith('t')
 
-  main(m_sleep, m_display_transient, m_target_set, m_target_shape, m_n_steps)
+  main(m_sleep, m_display_transient, m_target_set, m_target_shape, m_n_steps, m_deterministic)

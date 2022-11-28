@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import random
 import time
 from multiprocessing import RawArray
 
@@ -127,6 +128,13 @@ class Node:
       node.forward(output=False)
     for node in nodes:
       node.output()
+
+  @staticmethod
+  def stochastic_update(nodes: list[Node]):
+    for _ in range(len(nodes)):
+      node_idx = random.randint(0, len(nodes) - 1)
+      node = nodes[node_idx]
+      node.forward(output=True)
 
   def forward(self, output: bool = True):
     n, e, s, w = self.sensors()
