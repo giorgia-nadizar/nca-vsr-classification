@@ -40,7 +40,7 @@ def load_shapes_from_file(filename: str):
   return shapes
 
 
-def to_ten_dim_label(x, y):
+def expand_y_label(x, y):
   y_res = np.zeros(list(x.shape) + [len(x)])
   # broadcast y to match x shape:
   y_expanded = np.broadcast_to(y, x.T.shape).T
@@ -52,7 +52,7 @@ def train(x_train: list[list[list]], num_iterations: int = 1500, plots: bool = F
   model = Model.standard_model(len(x_train))
   x_train = np.array(x_train).astype(np.float32)
   y_train = np.array(list(range(len(x_train))))
-  y_train = to_ten_dim_label(x_train, y_train)
+  y_train = expand_y_label(x_train, y_train)
 
   trainer = tf.keras.optimizers.Adam()
   losses = []
