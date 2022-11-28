@@ -12,10 +12,10 @@ from nca import Model
 from utils import PicklePersist
 
 
-def parse_shape(line: str):
+def parse_shape(line: str, width: int = 9, height: int = 4):
   string = re.sub(r'^.*?\[', '[', line).replace(' ', '').replace('[[', '').replace(']]', '').replace('\n', '') \
-    .replace(',', '')
-  tokens = string.split('][')
+    .replace(',', '').replace('][', '|')
+  tokens = string.split('|')
   if len(tokens) <= 1:
     return None
   shape = []
@@ -27,6 +27,11 @@ def parse_shape(line: str):
       else:
         row.append(1)
     shape.append(row)
+  for row in shape:
+    while len(row) < width:
+      row.append(0)
+  while len(shape) < height:
+    shape.insert(0, [0 for x in range(width)])
   return shape
 
 
