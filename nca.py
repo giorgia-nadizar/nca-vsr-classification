@@ -142,7 +142,8 @@ class Node:
         time.sleep(0.1)
     print("done " + self.name)
 
-  def relu(self, x):
+  @staticmethod
+  def relu(x):
     return (x > 0) * x
 
   def sensors(self):
