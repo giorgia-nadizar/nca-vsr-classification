@@ -15,8 +15,7 @@ from utils import PicklePersist
 class Model(tf.keras.Model):
 
   @classmethod
-  def standard_model(cls, class_n: int):
-    channel_n = 21
+  def standard_model(cls, class_n: int, channel_n: int = 21):
     grid_size_x = 9
     grid_size_y = 4
     return Model(channel_n, class_n, grid_size_x, grid_size_y)
@@ -63,8 +62,9 @@ class Model(tf.keras.Model):
 class Node:
   def __init__(self, name, pk_self, pk_bottom, pk_left, pk_right, pk_top, perceive_bias, dmodel_kernel_1, dmodel_bias_1,
                dmodel_kernel_2, dmodel_bias_2, n_val: RawArray, e_val: RawArray, s_val: RawArray, w_val: RawArray,
-               own_val: RawArray):
+               own_val: RawArray, n_channels: int = 21):
     self.name = name
+    self.n_channels = n_channels
     self.w_val = w_val
     self.s_val = s_val
     self.e_val = e_val
@@ -165,8 +165,8 @@ class Node:
     return (x > 0) * x
 
   def sensors(self):
-    return (np.frombuffer(v, dtype=np.float32) if v is not None else np.zeros(21, dtype=np.float32) for v in
-            (self.n_val, self.e_val, self.s_val, self.w_val))
+    return (np.frombuffer(v, dtype=np.float32) if v is not None else np.zeros(self.n_channels, dtype=np.float32)
+            for v in (self.n_val, self.e_val, self.s_val, self.w_val))
 
   def output(self):
     self.own_val[:] = self.state.tolist()

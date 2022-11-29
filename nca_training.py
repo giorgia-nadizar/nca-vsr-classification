@@ -31,7 +31,7 @@ def parse_shape(line: str, width: int = 9, height: int = 4):
     while len(row) < width:
       row.append(0)
   while len(shape) < height:
-    shape.insert(0, [0 for x in range(width)])
+    shape.insert(0, [0 for _ in range(width)])
   return shape
 
 
@@ -67,7 +67,7 @@ def train(x_train: list[list[list]], num_iterations: int = 1500, plots: bool = F
   mask = tf.expand_dims(x0, axis=3)  # (bs, y, x, 1)
   y0 = tf.constant(y_train)  # (bs, y, x, num_classes)
 
-  for i in tqdm.tqdm(range(num_iterations)):
+  for _ in tqdm.tqdm(range(num_iterations)):
     state = model.initialize(x0)
     with tf.GradientTape() as tape:
       for j in range(random.randint(9, 29)):
@@ -190,6 +190,14 @@ def write_model_to_files(set_number: int):
 
 
 if __name__ == '__main__':
+  target_set = 1
+  n_iterations = 1500
+
   args = sys.argv[1:]
-  target_set = 1 if len(args) == 0 else args[0]
-  train_and_pickle(target_set)
+  for arg in args:
+    if arg.startswith('set'):
+      target_set = int(arg.replace('set=', ''))
+    if arg.startswith('n_it'):
+      n_iterations = int(arg.replace('n_it=', ''))
+
+  train_and_pickle(target_set, n_iterations)
