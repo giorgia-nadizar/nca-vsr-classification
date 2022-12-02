@@ -2,11 +2,22 @@ import ctypes
 import sys
 import time
 from multiprocessing import RawArray
+from typing import List
 
 import numpy as np
 
 from nca import Node
 from nca_training import load_shapes_from_file, parse_shape
+
+
+def shape_to_string(shape: List[List[int]]):
+  mi = min([row.index(1) for row in shape if 1 in row])
+  ma = max([len(row) - 1 - row[::-1].index(1) for row in shape if 1 in row])
+  strings = []
+  for row in shape:
+    if 1 in row:
+      strings.append(''.join(str(row[k]) for k in range(mi, ma + 1)))
+  return '-'.join(strings)
 
 
 def print_vals(vals, width: int, height: int, n_classes: int, pretty_print: bool = True) -> None:
@@ -22,15 +33,11 @@ def print_vals(vals, width: int, height: int, n_classes: int, pretty_print: bool
           print(f'{j},{i},{np.argmax(np.frombuffer(vals[i][j], dtype=np.float32)[-n_classes:])}')
 
 
-def main(sleep: bool, display_transient: bool, target_set: int, target_shape: str, n_steps: int, deterministic: bool,
-         pretty_print: bool, n_extra_channels: int = 10):
-  shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(target_set) + '.txt')
-  x = shapes[int(target_shape)] if target_shape.isnumeric() else parse_shape(target_shape)
+def setup_nca(shapes, x, n_extra_channels: int, target_set: int):
   n_classes = len(shapes)
-
-  # setup shared arrays
   width = len(x[0])
   height = len(x)
+  # setup shared arrays
   vals = [[None for _ in range(width)] for _ in range(height)]
   for i in range(height):
     for j in range(width):
@@ -48,6 +55,25 @@ def main(sleep: bool, display_transient: bool, target_set: int, target_shape: st
                                 vals[i + 1][j] if i < height - 1 else None, vals[i][j - 1] if j > 0 else None,
                                 vals[i][j], n_classes=n_classes)
         nodes.append(node)
+  return vals, nodes
+
+
+def main_to_csv():
+  target_sets = range(1, 5)
+  for target_set in target_sets:
+    shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(target_set) + '.txt')
+    for idx, x in enumerate(shapes):
+      print(f'{idx} -> {shape_to_string(x)}')
+
+
+def main(sleep: bool, display_transient: bool, target_set: int, target_shape: str, n_steps: int, deterministic: bool,
+         pretty_print: bool, n_extra_channels: int = 10):
+  shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(target_set) + '.txt')
+  x = shapes[int(target_shape)] if target_shape.isnumeric() else parse_shape(target_shape)
+  n_classes = len(shapes)
+  width = len(x[0])
+  height = len(x)
+  vals, nodes = setup_nca(shapes, x, n_extra_channels, target_set)
 
   for n in range(n_steps):
     if deterministic:
@@ -73,6 +99,9 @@ if __name__ == '__main__':
 
   args = sys.argv[1:]
   for arg in args:
+    if arg.startswith('csv'):
+      main_to_csv()
+      exit(0)
     if arg.startswith('set'):
       m_target_set = int(arg.replace('set=', ''))
     elif arg.startswith('shape'):
