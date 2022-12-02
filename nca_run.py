@@ -23,9 +23,10 @@ def print_vals(vals, width: int, height: int, n_classes: int, pretty_print: bool
 
 
 def main(sleep: bool, display_transient: bool, target_set: int, target_shape: str, n_steps: int, deterministic: bool,
-         pretty_print: bool):
+         pretty_print: bool, n_extra_channels: int = 10):
   shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(target_set) + '.txt')
   x = shapes[int(target_shape)] if target_shape.isnumeric() else parse_shape(target_shape)
+  n_classes = len(shapes)
 
   # setup shared arrays
   width = len(x[0])
@@ -34,9 +35,9 @@ def main(sleep: bool, display_transient: bool, target_set: int, target_shape: st
   for i in range(height):
     for j in range(width):
       if x[i][j] == 1:
-        vals[i][j] = RawArray(ctypes.c_float,
-                              [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                               0.0, 0.0, 0.0])
+        values = [0.0 for _ in range(n_classes + n_extra_channels)]
+        values[0] = 1.0
+        vals[i][j] = RawArray(ctypes.c_float, values)
 
   nodes = []
   for i in range(height):
@@ -45,7 +46,7 @@ def main(sleep: bool, display_transient: bool, target_set: int, target_shape: st
         node = Node.from_pickle("%d%d" % (i, j), 'parameters/params_set' + str(target_set) + '.pbz2',
                                 vals[i - 1][j] if i > 0 else None, vals[i][j + 1] if j < width - 1 else None,
                                 vals[i + 1][j] if i < height - 1 else None, vals[i][j - 1] if j > 0 else None,
-                                vals[i][j])
+                                vals[i][j], n_classes=n_classes)
         nodes.append(node)
 
   for n in range(n_steps):
@@ -54,7 +55,7 @@ def main(sleep: bool, display_transient: bool, target_set: int, target_shape: st
     else:
       Node.stochastic_update(nodes)
     if display_transient or n == n_steps - 1:
-      print_vals(vals, width, height, len(shapes), pretty_print)
+      print_vals(vals, width, height, n_classes, pretty_print)
     if display_transient:
       print('')
     if sleep:
@@ -63,10 +64,10 @@ def main(sleep: bool, display_transient: bool, target_set: int, target_shape: st
 
 if __name__ == '__main__':
   m_sleep = False
-  m_display_transient = False
-  m_target_set = 3
-  m_target_shape = '11'
-  m_n_steps = 50
+  m_display_transient = True
+  m_target_set = 1
+  m_target_shape = '1'
+  m_n_steps = 10
   m_deterministic = True
   m_pretty_print = True
 

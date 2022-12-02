@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import csv
 import random
 import time
 from multiprocessing import RawArray
@@ -15,10 +14,10 @@ from utils import PicklePersist
 class Model(tf.keras.Model):
 
   @classmethod
-  def standard_model(cls, class_n: int, channel_n: int = 21):
+  def standard_model(cls, class_n: int, n_extra_channels: int = 10):
     grid_size_x = 9
     grid_size_y = 4
-    return Model(channel_n, class_n, grid_size_x, grid_size_y)
+    return Model(class_n + n_extra_channels, class_n, grid_size_x, grid_size_y)
 
   def __init__(self, channel_n: int, class_n: int, grid_size_x: int, grid_size_y: int):
     super().__init__()
@@ -62,9 +61,9 @@ class Model(tf.keras.Model):
 class Node:
   def __init__(self, name, pk_self, pk_bottom, pk_left, pk_right, pk_top, perceive_bias, dmodel_kernel_1, dmodel_bias_1,
                dmodel_kernel_2, dmodel_bias_2, n_val: RawArray, e_val: RawArray, s_val: RawArray, w_val: RawArray,
-               own_val: RawArray, n_channels: int = 21):
+               own_val: RawArray, n_classes: int = None, n_channels: int = None, n_extra_channels: int = 10):
     self.name = name
-    self.n_channels = n_channels
+    self.n_channels = n_channels if n_channels is not None else n_classes + n_extra_channels
     self.w_val = w_val
     self.s_val = s_val
     self.e_val = e_val
@@ -84,7 +83,7 @@ class Node:
 
   @classmethod
   def from_pickle(cls, name: str, filename: str, n_val: RawArray, e_val: RawArray, s_val: RawArray, w_val: RawArray,
-                  own_val: RawArray):
+                  own_val: RawArray, n_classes: int):
     dictionary = PicklePersist.decompress_pickle(filename)
     pk_self = dictionary['pk_self']
     pk_bottom = dictionary['pk_bottom']
@@ -97,30 +96,7 @@ class Node:
     dmodel_kernel_2 = dictionary['dmodel_kernel_2']
     dmodel_bias_2 = dictionary['dmodel_bias_2']
     return Node(name, pk_self, pk_bottom, pk_left, pk_right, pk_top, perceive_bias, dmodel_kernel_1, dmodel_bias_1,
-                dmodel_kernel_2, dmodel_bias_2, n_val, e_val, s_val, w_val, own_val)
-
-  # todo need to make it work (or remove)
-  @classmethod
-  def from_files(cls, name: str, path: str, n_val: RawArray, e_val: RawArray, s_val: RawArray, w_val: RawArray,
-                 own_val: RawArray):
-    pk_self = Node.fetch_params_from_file(path + 'pk_self.csv')
-    pk_bottom = Node.fetch_params_from_file(path + 'pk_bottom.csv')
-    pk_left = Node.fetch_params_from_file(path + 'pk_left.csv')
-    pk_right = Node.fetch_params_from_file(path + 'pk_right.csv')
-    pk_top = Node.fetch_params_from_file(path + 'pk_top.csv')
-    perceive_bias = Node.fetch_params_from_file(path + 'perceive_bias.csv')
-    dmodel_kernel_1 = Node.fetch_params_from_file(path + 'dmodel_kernel_1.csv')
-    dmodel_bias_1 = Node.fetch_params_from_file(path + 'dmodel_bias_1.csv')
-    dmodel_kernel_2 = Node.fetch_params_from_file(path + 'dmodel_kernel_2.csv')
-    dmodel_bias_2 = Node.fetch_params_from_file(path + 'dmodel_bias_2.csv')
-    return Node(name, pk_self, pk_bottom, pk_left, pk_right, pk_top, perceive_bias, dmodel_kernel_1, dmodel_bias_1,
-                dmodel_kernel_2, dmodel_bias_2, n_val, e_val, s_val, w_val, own_val)
-
-  @staticmethod
-  def fetch_params_from_file(filename: str):
-    with open(filename, newline='') as f:
-      reader = csv.reader(f)
-      return next(reader)
+                dmodel_kernel_2, dmodel_bias_2, n_val, e_val, s_val, w_val, own_val, n_classes=n_classes)
 
   @staticmethod
   def sync_update_all(nodes: list[Node]):

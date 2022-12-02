@@ -1,4 +1,3 @@
-import csv
 import random
 import re
 import sys
@@ -13,8 +12,8 @@ from utils import PicklePersist
 
 
 def parse_shape(line: str, width: int = 9, height: int = 4):
-  string = re.sub(r'^.*?\[', '[', line).replace(' ', '').replace('[[', '').replace(']]', '').replace('\n', '') \
-    .replace(',', '').replace('][', '-')
+  string = re.sub(r'^.*?\[', '[', re.sub(r'^.*?=', '', line)).replace(' ', '').replace('[[', '') \
+    .replace(']]', '').replace('\n', '').replace(',', '').replace('][', '-')
   tokens = string.split('-')
   if len(tokens) <= 1:
     return None
@@ -132,65 +131,8 @@ def train_and_pickle(set_number: int, num_iterations: int = 1500):
   PicklePersist.compress_pickle('parameters/params_set' + str(set_number), data=dictionary)
 
 
-def write_model_to_files(set_number: int):
-  shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(set_number) + '.txt')
-  model, _, _ = train(shapes, plots=False)
-
-  perceive_kernel, pb = model.perceive.layers[0].get_weights()
-  dk1, db1 = model.dmodel.layers[0].get_weights()
-  dk1 = dk1[0][0][:][:]
-  dk2, db2 = model.dmodel.layers[1].get_weights()
-  dk2 = dk2[0][0][:][:]
-
-  pk_self = perceive_kernel[1][1][:][:]
-  pk_top = perceive_kernel[0][1][:][:]
-  pk_bottom = perceive_kernel[2][1][:][:]
-  pk_right = perceive_kernel[1][2][:][:]
-  pk_left = perceive_kernel[1][0][:][:]
-
-  with open('pk_self.csv', 'w+', newline='') as csvfile:
-    pk_self_csv = csv.writer(csvfile, delimiter=' ')
-    pk_self_csv.writerows(pk_self)
-
-  with open('pk_top.csv', 'w+', newline='') as csvfile:
-    pk_top_csv = csv.writer(csvfile, delimiter=' ')
-    pk_top_csv.writerows(pk_top)
-
-  with open('pk_bottom.csv', 'w+', newline='') as csvfile:
-    pk_bottom_csv = csv.writer(csvfile, delimiter=' ')
-    pk_bottom_csv.writerows(pk_bottom)
-
-  with open('pk_right.csv', 'w+', newline='') as csvfile:
-    pk_right_csv = csv.writer(csvfile, delimiter=' ')
-    pk_right_csv.writerows(pk_right)
-
-  with open('pk_left.csv', 'w+', newline='') as csvfile:
-    pk_left_csv = csv.writer(csvfile, delimiter=' ')
-    pk_left_csv.writerows(pk_left)
-
-  with open('dmodel_kernel_1.csv', 'w+', newline='') as csvfile:
-    spamwriter = csv.writer(csvfile, delimiter=',')
-    spamwriter.writerows(dk1)
-
-  with open('dmodel_kernel_2.csv', 'w+', newline='') as csvfile:
-    spamwriter = csv.writer(csvfile, delimiter=',')
-    spamwriter.writerows(dk2)
-
-  with open('perceive_bias.csv', 'w+', newline='') as csvfile:
-    spamwriter = csv.writer(csvfile, delimiter=',')
-    spamwriter.writerow(pb)
-
-  with open('dmodel_bias_1.csv', 'w+', newline='') as csvfile:
-    spamwriter = csv.writer(csvfile, delimiter=',')
-    spamwriter.writerow(db1)
-
-  with open('dmodel_bias_2.csv', 'w+', newline='') as csvfile:
-    spamwriter = csv.writer(csvfile, delimiter=',')
-    spamwriter.writerow(db2)
-
-
 if __name__ == '__main__':
-  target_set = 1
+  target_set = 3
   n_iterations = 1500
 
   args = sys.argv[1:]
