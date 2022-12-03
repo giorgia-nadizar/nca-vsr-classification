@@ -134,7 +134,7 @@ def train_and_pickle(set_number: int, num_iterations: int = 1500):
 
 
 if __name__ == '__main__':
-  target_set = 4
+  target_set = 0
   n_iterations = 1500
 
   args = sys.argv[1:]
