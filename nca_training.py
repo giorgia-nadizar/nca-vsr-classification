@@ -15,7 +15,7 @@ def parse_shape(line: str, width: int = 9, height: int = 4):
   string = re.sub(r'^.*?\[', '[', re.sub(r'^.*?=', '', line)).replace(' ', '').replace('[[', '') \
     .replace(']]', '').replace('\n', '').replace(',', '').replace('][', '-')
   tokens = string.split('-')
-  if len(tokens) <= 1:
+  if len(tokens) < 1:
     return None
   shape = []
   for token in tokens:
@@ -37,8 +37,10 @@ def parse_shape(line: str, width: int = 9, height: int = 4):
 def load_shapes_from_file(filename: str):
   shapes = []
   lines = open(filename, 'r').readlines()
+  counter = 0
   for line in lines:
     shape = parse_shape(line)
+    counter += 1
     if shape:
       shapes.append(shape)
   return shapes
@@ -132,7 +134,7 @@ def train_and_pickle(set_number: int, num_iterations: int = 1500):
 
 
 if __name__ == '__main__':
-  target_set = 3
+  target_set = 4
   n_iterations = 1500
 
   args = sys.argv[1:]
