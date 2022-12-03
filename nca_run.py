@@ -20,17 +20,22 @@ def shape_to_string(shape: List[List[int]]):
   return '-'.join(strings)
 
 
-def print_vals(vals, width: int, height: int, n_classes: int, pretty_print: bool = True) -> None:
+def string_vals(vals, width: int, height: int, n_classes: int, pretty_print: bool = True, inline: bool = False) -> str:
   if pretty_print:
     for i in range(height):
-      print("".join(
+      return "".join(
         [f'({np.argmax(np.frombuffer(vals[i][j], dtype=np.float32)[-n_classes:]):02d})'
-         if vals[i][j] is not None else '    ' for j in range(width)]))
+         if vals[i][j] is not None else '    ' for j in range(width)])
   else:
+    values = []
     for i in range(height):
       for j in range(width):
         if vals[i][j] is not None:
-          print(f'{j},{i},{np.argmax(np.frombuffer(vals[i][j], dtype=np.float32)[-n_classes:])}')
+          values.append(f'{j},{i},{np.argmax(np.frombuffer(vals[i][j], dtype=np.float32)[-n_classes:])}')
+    if inline:
+      return '-'.join(values)
+    else:
+      return '\n'.join(values)
 
 
 def setup_nca(shapes, x, n_extra_channels: int, target_set: int):
@@ -58,12 +63,25 @@ def setup_nca(shapes, x, n_extra_channels: int, target_set: int):
   return vals, nodes
 
 
-def main_to_csv():
-  target_sets = range(1, 5)
+def main_to_csv(n_steps: int = 51, n_snapshots: int = 5, n_extra_channels: int = 10, deterministic: bool = True):
+  target_sets = [4]  # range(1, 5)
+  print('target_set;shape_id;readable_shape;step;classification')
   for target_set in target_sets:
     shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(target_set) + '.txt')
+    n_classes = len(shapes)
+    step = n_steps // n_snapshots
     for idx, x in enumerate(shapes):
-      print(f'{idx} -> {shape_to_string(x)}')
+      width = len(x[0])
+      height = len(x)
+      vals, nodes = setup_nca(shapes, x, n_extra_channels, target_set)
+      for n in range(n_steps):
+        if deterministic:
+          Node.sync_update_all(nodes)
+        else:
+          Node.stochastic_update(nodes)
+        if n % step == 0:
+          s = string_vals(vals, width, height, n_classes, pretty_print=False, inline=True)
+          print(f'{target_set};{idx};{shape_to_string(x)};{n};{s}')
 
 
 def main(sleep: bool, display_transient: bool, target_set: int, target_shape: str, n_steps: int, deterministic: bool,
@@ -81,7 +99,7 @@ def main(sleep: bool, display_transient: bool, target_set: int, target_shape: st
     else:
       Node.stochastic_update(nodes)
     if display_transient or n == n_steps - 1:
-      print_vals(vals, width, height, n_classes, pretty_print)
+      print(string_vals(vals, width, height, n_classes, pretty_print))
     if display_transient:
       print('')
     if sleep:
