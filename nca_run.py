@@ -64,7 +64,7 @@ def setup_nca(shapes, x, n_extra_channels: int, target_set: int):
 
 
 def main_to_csv(n_steps: int = 51, n_snapshots: int = 5, n_extra_channels: int = 10, deterministic: bool = True):
-  target_sets = [4]  # range(1, 5)
+  target_sets = range(1, 5)
   print('target_set;shape_id;readable_shape;step;classification')
   for target_set in target_sets:
     shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(target_set) + '.txt')
