@@ -54,7 +54,7 @@ def expand_y_label(x, y):
   return y_res.astype(np.float32)
 
 
-def train(x_train: list[list[list]], num_iterations: int = 1500, plots: bool = False):
+def train(x_train: list[list[list]], num_iterations: int = 1500, plots: bool = False, save_progress=True):
   model = Model.standard_model(len(x_train))
   x_train = np.array(x_train).astype(np.float32)
   y_train = np.array(list(range(len(x_train))))
@@ -108,6 +108,12 @@ def train(x_train: list[list[list]], num_iterations: int = 1500, plots: bool = F
     pl.legend()
     pl.show()
 
+  if save_progress:
+    with open(f'training/progress_{target_set}.txt', 'w') as f:
+      f.write('iteration;loss;acc\n')
+      for iteration in range(num_iterations):
+        f.write(f'{iteration};{losses[iteration].numpy()};{accs[iteration]}\n')
+
   return model, losses, accs
 
 
@@ -134,7 +140,7 @@ def train_and_pickle(set_number: int, num_iterations: int = 1500):
 
 
 if __name__ == '__main__':
-  target_set = 0
+  target_set = 1
   n_iterations = 1500
 
   args = sys.argv[1:]
