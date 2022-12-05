@@ -54,7 +54,7 @@ def expand_y_label(x, y):
   return y_res.astype(np.float32)
 
 
-def train(x_train: list[list[list]], num_iterations: int = 1500, plots: bool = False, save_progress=True):
+def train(x_train: list[list[list]], num_iterations: int = 1500, plots: bool = False):
   model = Model.standard_model(len(x_train))
   x_train = np.array(x_train).astype(np.float32)
   y_train = np.array(list(range(len(x_train))))
@@ -108,18 +108,18 @@ def train(x_train: list[list[list]], num_iterations: int = 1500, plots: bool = F
     pl.legend()
     pl.show()
 
-  if save_progress:
-    with open(f'training/progress_{target_set}.txt', 'w') as f:
-      f.write('iteration;loss;acc\n')
-      for iteration in range(num_iterations):
-        f.write(f'{iteration};{losses[iteration].numpy()};{accs[iteration]}\n')
-
   return model, losses, accs
 
 
-def train_and_pickle(set_number: int, num_iterations: int = 1500):
+def train_and_pickle(set_number: int, num_iterations: int = 1500, save_progress=True):
   shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(set_number) + '.txt')
-  model, _, _ = train(shapes, num_iterations, plots=False)
+  model, losses, accs = train(shapes, num_iterations, plots=False)
+
+  if save_progress:
+    with open(f'training/progress_{set_number}.txt', 'w') as f:
+      f.write('iteration;loss;acc\n')
+      for iteration in range(num_iterations):
+        f.write(f'{iteration};{losses[iteration].numpy()};{accs[iteration]}\n')
 
   perceive_kernel, pb = model.perceive.layers[0].get_weights()
   dk1, db1 = model.dmodel.layers[0].get_weights()
