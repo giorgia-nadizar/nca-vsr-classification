@@ -88,7 +88,10 @@ def main_to_csv(n_steps: int = 51, n_snapshots: int = 5, n_extra_channels: int =
 def main(sleep: bool, display_transient: bool, target_set: int, target_shape: str, n_steps: int, deterministic: bool,
          pretty_print: bool, n_extra_channels: int = 10):
   shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(target_set) + '.txt')
-  x = shapes[int(target_shape)] if target_shape.isnumeric() else parse_shape(target_shape)
+  if target_shape.isnumeric() and int(target_shape) < len(shapes):
+    x = shapes[int(target_shape)]
+  else:
+    x = parse_shape(target_shape)
   n_classes = len(shapes)
   width = len(x[0])
   height = len(x)
