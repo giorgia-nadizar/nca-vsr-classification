@@ -20,6 +20,16 @@ def shape_to_string(shape: List[List[int]]):
   return '-'.join(strings)
 
 
+def classification_accuracy(ground_truth_id: int, classification: str):
+  predictions = classification.split('-')
+  correct = 0
+  for prediction in predictions:
+    predicted_class = prediction.split(',')[2]
+    if int(predicted_class) == ground_truth_id:
+      correct += 1
+  return correct / len(predictions)
+
+
 def string_vals(vals, width: int, height: int, n_classes: int, pretty_print: bool = True, inline: bool = False) -> str:
   if pretty_print:
     for i in range(height):
@@ -63,26 +73,34 @@ def setup_nca(shapes, x, n_extra_channels: int, target_set: int):
   return vals, nodes
 
 
-def main_to_csv(n_steps: int = 51, n_snapshots: int = 5, n_extra_channels: int = 10, deterministic: bool = True):
+def main_to_csv(n_steps: int = 51, n_snapshots: int = 5, n_extra_channels: int = 10, deterministic: bool = True,
+                accuracy_column: bool = True):
   target_sets = range(1, 5)
   with open('classifications/classification.txt', 'w') as f:
-    f.write('target_set;shape_id;readable_shape;step;classification[x,y,c]\n')
+    f.write('target_set;shape_id;readable_shape;step;classification[x,y,c]')
+    if accuracy_column:
+      f.write(';accuracy')
+    f.write('\n')
     for target_set in target_sets:
       shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(target_set) + '.txt')
       n_classes = len(shapes)
       step = n_steps // n_snapshots
-      for idx, x in enumerate(shapes):
-        width = len(x[0])
-        height = len(x)
-        vals, nodes = setup_nca(shapes, x, n_extra_channels, target_set)
+      for shape_id, shape in enumerate(shapes):
+        width = len(shape[0])
+        height = len(shape)
+        vals, nodes = setup_nca(shapes, shape, n_extra_channels, target_set)
         for n in range(n_steps):
           if deterministic:
             Node.sync_update_all(nodes)
           else:
             Node.stochastic_update(nodes)
           if n % step == 0:
-            s = string_vals(vals, width, height, n_classes, pretty_print=False, inline=True)
-            f.write(f'{target_set};{idx};{shape_to_string(x)};{n};{s}\n')
+            classification_string = string_vals(vals, width, height, n_classes, pretty_print=False, inline=True)
+            f.write(f'{target_set};{shape_id};{shape_to_string(shape)};{n};{classification_string}')
+            if accuracy_column:
+              accuracy = classification_accuracy(shape_id, classification_string)
+              f.write(f';{accuracy}')
+            f.write('\n')
 
 
 def main(sleep: bool, display_transient: bool, target_set: int, target_shape: str, n_steps: int, deterministic: bool,
