@@ -2,7 +2,7 @@ import ctypes
 import sys
 import time
 from multiprocessing import RawArray
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 
@@ -20,14 +20,11 @@ def shape_to_string(shape: List[List[int]]):
   return '-'.join(strings)
 
 
-def classification_accuracy(ground_truth_id: int, classification: str):
-  predictions = classification.split('-')
-  correct = 0
-  for prediction in predictions:
-    predicted_class = prediction.split(',')[2]
-    if int(predicted_class) == ground_truth_id:
-      correct += 1
-  return correct / len(predictions)
+def classification_accuracy(ground_truth_id: int, classification: str) -> Tuple[float, int]:
+  prediction_classes = [int(p.split(',')[2]) for p in classification.split('-')]
+  accuracy = prediction_classes.count(ground_truth_id) / len(prediction_classes)
+  majority_vote = max(set(prediction_classes), key=prediction_classes.count)
+  return accuracy, majority_vote
 
 
 def string_vals(vals, width: int, height: int, n_classes: int, pretty_print: bool = True, inline: bool = False) -> str:
@@ -79,7 +76,7 @@ def main_to_csv(n_steps: int = 51, n_snapshots: int = 5, n_extra_channels: int =
   with open('classifications/classification.txt', 'w') as f:
     f.write('target_set;shape_id;readable_shape;step;classification[x,y,c]')
     if accuracy_column:
-      f.write(';accuracy')
+      f.write(';accuracy;majority_vote')
     f.write('\n')
     for target_set in target_sets:
       shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(target_set) + '.txt')
@@ -98,8 +95,8 @@ def main_to_csv(n_steps: int = 51, n_snapshots: int = 5, n_extra_channels: int =
             classification_string = string_vals(vals, width, height, n_classes, pretty_print=False, inline=True)
             f.write(f'{target_set};{shape_id};{shape_to_string(shape)};{n};{classification_string}')
             if accuracy_column:
-              accuracy = classification_accuracy(shape_id, classification_string)
-              f.write(f';{accuracy}')
+              accuracy, majority_vote = classification_accuracy(shape_id, classification_string)
+              f.write(f';{accuracy};{majority_vote}')
             f.write('\n')
 
 
