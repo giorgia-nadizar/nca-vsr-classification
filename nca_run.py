@@ -70,7 +70,7 @@ def setup_nca(shapes, x, n_extra_channels: int, target_set: int):
   return vals, nodes
 
 
-def main_to_csv(n_steps: int = 51, n_snapshots: int = 5, n_extra_channels: int = 10, deterministic: bool = True,
+def main_to_csv(n_steps: int = 101, n_snapshots: int = 101, n_extra_channels: int = 10, deterministic: bool = True,
                 accuracy_column: bool = True):
   target_sets = range(1, 5)
   with open('classifications/classification.txt', 'w') as f:
