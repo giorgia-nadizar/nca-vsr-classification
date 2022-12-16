@@ -39,5 +39,5 @@ It accepts some arguments, which need to be specified in the form `arg_name=arg_
 An example run would be:
 
 ```
-python nca_run.py n_steps=20 display_transient=true target_set=1 deterministic=true pretty_print=true target_shape=1111111-1010101
+python nca_classification.py n_steps=20 display_transient=true target_set=1 deterministic=true pretty_print=true target_shape=1111111-1010101
 ```
