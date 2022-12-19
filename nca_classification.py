@@ -21,7 +21,7 @@ def shape_to_string(shape: List[List[int]]):
 
 
 def classification_accuracy(ground_truth_id: int, classification: str) -> Tuple[float, int]:
-  prediction_classes = [int(p.split(',')[2]) for p in classification.split('-')]
+  prediction_classes = [int(p.split(';')[2]) for p in classification.split('-')]
   accuracy = prediction_classes.count(ground_truth_id) / len(prediction_classes)
   majority_vote = max(set(prediction_classes), key=prediction_classes.count)
   return accuracy, majority_vote
@@ -38,7 +38,7 @@ def string_vals(vals, width: int, height: int, n_classes: int, pretty_print: boo
     for i in range(height):
       for j in range(width):
         if vals[i][j] is not None:
-          values.append(f'{j},{i},{np.argmax(np.frombuffer(vals[i][j], dtype=np.float32)[-n_classes:])}')
+          values.append(f'{j};{i};{np.argmax(np.frombuffer(vals[i][j], dtype=np.float32)[-n_classes:])}')
     if inline:
       return '-'.join(values)
     else:
@@ -73,10 +73,10 @@ def setup_nca(shapes, x, n_extra_channels: int, target_set: int):
 def main_to_csv(n_steps: int = 101, n_snapshots: int = 101, n_extra_channels: int = 10, deterministic: bool = True,
                 accuracy_column: bool = True):
   target_sets = range(1, 5)
-  with open('classifications/classification.txt', 'w') as f:
-    f.write('target_set;shape_id;readable_shape;step;classification[x,y,c]')
+  with open('classifications/classification.csv', 'w') as f:
+    f.write('target_set,shape_id,readable_shape,step,classification[x,y,c]')
     if accuracy_column:
-      f.write(';accuracy;majority_vote')
+      f.write(',accuracy,majority_vote')
     f.write('\n')
     for target_set in target_sets:
       shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(target_set) + '.txt')
@@ -93,10 +93,10 @@ def main_to_csv(n_steps: int = 101, n_snapshots: int = 101, n_extra_channels: in
             Node.stochastic_update(nodes)
           if n % step == 0:
             classification_string = string_vals(vals, width, height, n_classes, pretty_print=False, inline=True)
-            f.write(f'{target_set};{shape_id};{shape_to_string(shape)};{n};{classification_string}')
+            f.write(f'{target_set},{shape_id},{shape_to_string(shape)},{n},{classification_string}')
             if accuracy_column:
               accuracy, majority_vote = classification_accuracy(shape_id, classification_string)
-              f.write(f';{accuracy};{majority_vote}')
+              f.write(f',{accuracy},{majority_vote}')
             f.write('\n')
 
 
