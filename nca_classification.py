@@ -74,7 +74,7 @@ def main_to_csv(n_steps: int = 101, n_snapshots: int = 101, n_extra_channels: in
                 accuracy_column: bool = True):
   target_sets = range(1, 5)
   with open('classifications/classification.csv', 'w') as f:
-    f.write('target_set,shape_id,readable_shape,step,classification[x,y,c]')
+    f.write('target_set,shape_id,readable_shape,step,classification')
     if accuracy_column:
       f.write(',accuracy,majority_vote')
     f.write('\n')
