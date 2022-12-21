@@ -27,22 +27,25 @@ def classification_accuracy(ground_truth_id: int, classification: str) -> Tuple[
   return accuracy, majority_vote
 
 
-def string_vals(vals, width: int, height: int, n_classes: int, pretty_print: bool = True, inline: bool = False) -> str:
+def string_vals(vals, width: int, height: int, n_classes: int, pretty_print: bool = True, inline: bool = False,
+                reversed_y_axis=False) -> str:
+  values = []
   if pretty_print:
-    for i in range(height):
-      return "".join(
+    for h in range(height):
+      i = h if reversed_y_axis else height - 1 - h
+      values.append("".join(
         [f'({np.argmax(np.frombuffer(vals[i][j], dtype=np.float32)[-n_classes:]):02d})'
-         if vals[i][j] is not None else '    ' for j in range(width)])
+         if vals[i][j] is not None else '    ' for j in range(width)]))
   else:
-    values = []
-    for i in range(height):
+    for h in range(height):
       for j in range(width):
+        i = h if reversed_y_axis else height - 1 - h
         if vals[i][j] is not None:
-          values.append(f'{j};{i};{np.argmax(np.frombuffer(vals[i][j], dtype=np.float32)[-n_classes:])}')
-    if inline:
-      return '-'.join(values)
-    else:
-      return '\n'.join(values)
+          values.append(f'{j};{h};{np.argmax(np.frombuffer(vals[i][j], dtype=np.float32)[-n_classes:])}')
+  if inline:
+    return '-'.join(values)
+  else:
+    return '\n'.join(values)
 
 
 def setup_nca(shapes, x, n_extra_channels: int, target_set: int):
@@ -118,7 +121,7 @@ def main(sleep: bool, display_transient: bool, target_set: int, target_shape: st
     else:
       Node.stochastic_update(nodes)
     if display_transient or n == n_steps - 1:
-      print(string_vals(vals, width, height, n_classes, pretty_print))
+      print(string_vals(vals, width, height, n_classes, pretty_print, reversed_y_axis=True))
     if display_transient:
       print('')
     if sleep:
@@ -129,10 +132,10 @@ if __name__ == '__main__':
   m_sleep = False
   m_display_transient = True
   m_target_set = 1
-  m_target_shape = '1'
-  m_n_steps = 10
+  m_target_shape = '0'
+  m_n_steps = 25
   m_deterministic = True
-  m_pretty_print = True
+  m_pretty_print = False
 
   args = sys.argv[1:]
   for arg in args:
