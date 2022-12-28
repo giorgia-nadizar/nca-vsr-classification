@@ -3,6 +3,7 @@ import sys
 import time
 from multiprocessing import RawArray
 from typing import List, Tuple
+import nltk
 
 import numpy as np
 
@@ -10,12 +11,46 @@ from nca import Node
 from nca_training import load_shapes_from_file, parse_shape
 
 
-def shape_to_string(shape: List[List[int]]):
-  mi = min([row.index(1) for row in shape if 1 in row])
-  ma = max([len(row) - 1 - row[::-1].index(1) for row in shape if 1 in row])
+def compute_edit_distance_between_shapes(shape1: List[List[int]], shape2: List[List[int]]):
+  h1, l1 = len(shape1), len(shape1[0])
+  h2, l2 = len(shape2), len(shape2[0])
+  total_h = h1 + 2 * (h2 - 1)
+  total_l = l1 + 2 * (l2 - 1)
+  padded_shape1 = []
+  for _ in range(h2 - 1):
+    padded_shape1.append([0] * total_l)
+  for row in shape1:
+    padded_shape1.append([0] * (l2 - 1) + row + [0] * (l2 - 1))
+  for _ in range(h2 - 1):
+    padded_shape1.append([0] * total_l)
+
+  padded_shape1_string = shape_to_string(padded_shape1, hide_extra_zeros=False)
+
+  min_edit_distance = np.inf
+  # shift shape 2 in all grid positions
+  for y_off in range(total_h - h2 + 1):
+    for x_off in range(total_l - l2 + 1):
+      # compute the shape
+      shifted_shape2 = []
+      for _ in range(y_off):
+        shifted_shape2.append([0] * total_l)
+      for row in shape2:
+        shifted_shape2.append([0] * x_off + row + [0] * (total_l - x_off - l2))
+      for _ in range(total_h - h2 - y_off):
+        shifted_shape2.append([0] * total_l)
+      shifted_shape2_string = shape_to_string(shifted_shape2, hide_extra_zeros=False)
+      edit_distance = nltk.edit_distance(padded_shape1_string, shifted_shape2_string)
+      if edit_distance < min_edit_distance:
+        min_edit_distance = edit_distance
+  return min_edit_distance
+
+
+def shape_to_string(shape: List[List[int]], hide_extra_zeros: bool = True) -> str:
+  mi = min([row.index(1) for row in shape if 1 in row]) if hide_extra_zeros else 0
+  ma = max([len(row) - 1 - row[::-1].index(1) for row in shape if 1 in row]) if hide_extra_zeros else len(shape[0]) - 1
   strings = []
   for row in shape:
-    if 1 in row:
+    if (hide_extra_zeros and 1 in row) or not hide_extra_zeros:
       strings.append(''.join(str(row[k]) for k in range(mi, ma + 1)))
   return '-'.join(strings)
 
@@ -73,8 +108,9 @@ def setup_nca(shapes, x, n_extra_channels: int, target_set: int):
   return vals, nodes
 
 
-def main_to_csv(n_steps: int = 101, n_snapshots: int = 101, n_extra_channels: int = 10, deterministic: bool = True,
-                accuracy_column: bool = True):
+def correct_shapes_classification_csv(n_steps: int = 101, n_snapshots: int = 101, n_extra_channels: int = 10,
+                                      deterministic: bool = True,
+                                      accuracy_column: bool = True):
   target_sets = range(1, 5)
   with open('classifications/classification.csv', 'w') as f:
     f.write('target_set,shape_id,readable_shape,step,classification')
@@ -101,6 +137,36 @@ def main_to_csv(n_steps: int = 101, n_snapshots: int = 101, n_extra_channels: in
               accuracy, majority_vote = classification_accuracy(shape_id, classification_string)
               f.write(f',{accuracy},{majority_vote}')
             f.write('\n')
+
+
+def mismatched_shapes_classification_csv(shapes_set: int, nca_set: int, n_steps: int = 101, n_snapshots: int = 101,
+                                         n_extra_channels: int = 10, deterministic: bool = True):
+  with open('classifications/mismatched_classification.csv', 'w') as f:
+    f.write('shapes_set,shape_id,target_set,closest_shape_id,edit_distance,readable_shape,step,classification,'
+            'majority_vote\n')
+    shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(shapes_set) + '.txt')
+    nca_shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(nca_set) + '.txt')
+    n_classes = len(nca_shapes)
+    step = n_steps // n_snapshots
+    for shape_id, shape in enumerate(shapes):
+      ids_distances = dict(
+        [(idx, compute_edit_distance_between_shapes(nca_shapes[idx], shape)) for idx in range(len(nca_shapes))])
+      closest_shape_id = min(ids_distances, key=ids_distances.get)
+      edit_distance = ids_distances[closest_shape_id]
+
+      width = len(shape[0])
+      height = len(shape)
+      vals, nodes = setup_nca(nca_shapes, shape, n_extra_channels, nca_set)
+      for n in range(n_steps):
+        if deterministic:
+          Node.sync_update_all(nodes)
+        else:
+          Node.stochastic_update(nodes)
+        if n % step == 0:
+          classification_string = string_vals(vals, width, height, n_classes, pretty_print=False, inline=True)
+          _, majority_vote = classification_accuracy(shape_id, classification_string)
+          f.write(f'{shapes_set},{shape_id},{nca_set},{closest_shape_id},{edit_distance},{shape_to_string(shape)},{n},'
+                  f'{classification_string},{majority_vote}\n')
 
 
 def main(sleep: bool, display_transient: bool, target_set: int, target_shape: str, n_steps: int, deterministic: bool,
@@ -139,8 +205,11 @@ if __name__ == '__main__':
 
   args = sys.argv[1:]
   for arg in args:
+    if arg.startswith('csv_mismatch'):
+      mismatched_shapes_classification_csv(3, 1)
+      exit(0)
     if arg.startswith('csv'):
-      main_to_csv()
+      correct_shapes_classification_csv()
       exit(0)
     if arg.startswith('set'):
       m_target_set = int(arg.replace('set=', ''))

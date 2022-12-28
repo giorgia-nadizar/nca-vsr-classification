@@ -5,3 +5,4 @@ matplotlib~=3.5.1
 tqdm~=4.64.1
 pandas~=1.5.0
 seaborn~=0.12.1
+nltk
