@@ -1,5 +1,4 @@
 import random
-import re
 import sys
 
 import matplotlib.pylab as pl
@@ -8,42 +7,7 @@ import tensorflow as tf
 import tqdm
 
 from nca import Model
-from utils import PicklePersist
-
-
-def parse_shape(line: str, width: int = 9, height: int = 4):
-  string = re.sub(r'^.*?\[', '[', re.sub(r'^.*?=', '', line)).replace(' ', '').replace('[[', '') \
-    .replace(']]', '').replace('\n', '').replace(',', '').replace('][', '-')
-  tokens = string.split('-')
-  if len(tokens) < 1:
-    return None
-  shape = []
-  for token in tokens:
-    row = []
-    for number in token:
-      if number == '0':
-        row.append(0)
-      else:
-        row.append(1)
-    shape.append(row)
-  for row in shape:
-    while len(row) < width:
-      row.append(0)
-  while len(shape) < height:
-    shape.insert(0, [0 for _ in range(width)])
-  return shape
-
-
-def load_shapes_from_file(filename: str):
-  shapes = []
-  lines = open(filename, 'r').readlines()
-  counter = 0
-  for line in lines:
-    shape = parse_shape(line)
-    counter += 1
-    if shape:
-      shapes.append(shape)
-  return shapes
+from utils import ShapeUtils, PicklePersist
 
 
 def expand_y_label(x, y):
@@ -54,7 +18,7 @@ def expand_y_label(x, y):
   return y_res.astype(np.float32)
 
 
-def train(x_train: list[list[list]], num_iterations: int = 1500, plots: bool = False):
+def train(x_train: list[list[list]], num_iterations: int = 1500, plots: bool = False, interval: range = None):
   model = Model.standard_model(len(x_train))
   x_train = np.array(x_train).astype(np.float32)
   y_train = np.array(list(range(len(x_train))))
@@ -71,13 +35,29 @@ def train(x_train: list[list[list]], num_iterations: int = 1500, plots: bool = F
   for _ in tqdm.tqdm(range(num_iterations)):
     state = model.initialize(x0)
     with tf.GradientTape() as tape:
-      for j in range(random.randint(9, 29)):
-        update = model(state)  # (bs, 5, 4, n)
-        random_mask = tf.cast(tf.random.uniform(state.shape) < 0.5, tf.float32)
-        update = update * mask * random_mask  # mask out updates to "dead" cells (bs, y, x, n)
-        state = state + update  # (bs, y, x, n)
-      x = model.classify(state)  # (1, y, x, n_classes)
-      loss = tf.reduce_mean((y0 - x) ** 2)
+      if interval is None:
+        for _ in range(random.randint(9, 29)):
+          update = model(state)  # (bs, 5, 4, n)
+          random_mask = tf.cast(tf.random.uniform(state.shape) < 0.5, tf.float32)
+          update = update * mask * random_mask  # mask out updates to "dead" cells (bs, y, x, n)
+          state = state + update  # (bs, y, x, n)
+          x = model.classify(state)  # (1, y, x, n_classes)
+          loss = tf.reduce_mean((y0 - x) ** 2)
+      else:
+        loss = 0
+        for _ in range(interval.start):
+          update = model(state)  # (bs, 5, 4, n)
+          random_mask = tf.cast(tf.random.uniform(state.shape) < 0.5, tf.float32)
+          update = update * mask * random_mask  # mask out updates to "dead" cells (bs, y, x, n)
+          state = state + update  # (bs, y, x, n)
+        for _ in interval:
+          update = model(state)  # (bs, 5, 4, n)
+          random_mask = tf.cast(tf.random.uniform(state.shape) < 0.5, tf.float32)
+          update = update * mask * random_mask  # mask out updates to "dead" cells (bs, y, x, n)
+          state = state + update  # (bs, y, x, n)
+          x = model.classify(state)  # (1, y, x, n_classes)
+          loss += tf.reduce_mean((y0 - x) ** 2)
+        loss /= len(interval)
 
     grads = tape.gradient(loss, model.trainable_weights)
     trainer.apply_gradients(zip(grads, model.trainable_weights))
@@ -111,12 +91,12 @@ def train(x_train: list[list[list]], num_iterations: int = 1500, plots: bool = F
   return model, losses, accuracies
 
 
-def train_and_pickle(set_number: int, num_iterations: int = 1500, save_progress=True):
-  shapes = load_shapes_from_file('shapes/sample_creatures_set' + str(set_number) + '.txt')
-  model, losses, accuracies = train(shapes, num_iterations, plots=False)
+def train_and_pickle(set_number: int, num_iterations: int = 1500, save_progress=True, interval=range(25, 50)):
+  shapes = ShapeUtils.load_shapes_from_file('shapes/sample_creatures_set' + str(set_number) + '.txt')
+  model, losses, accuracies = train(shapes, num_iterations, plots=False, interval=interval)
 
   if save_progress:
-    with open(f'training/progress_{set_number}.txt', 'w') as f:
+    with open(f'training/larger_net_progress_{set_number}.txt', 'w') as f:
       f.write('iteration;loss;accuracy\n')
       for iteration in range(num_iterations):
         f.write(f'{iteration};{losses[iteration].numpy()};{accuracies[iteration]}\n')
@@ -136,7 +116,7 @@ def train_and_pickle(set_number: int, num_iterations: int = 1500, save_progress=
     'pk_self': perceive_kernel[1][1][:][:],
     'pk_top': perceive_kernel[0][1][:][:]
   }
-  PicklePersist.compress_pickle('parameters/params_set' + str(set_number), data=dictionary)
+  PicklePersist.compress_pickle('parameters/larger_net_params_set' + str(set_number), data=dictionary)
 
 
 if __name__ == '__main__':
@@ -150,4 +130,7 @@ if __name__ == '__main__':
     if arg.startswith('n_it'):
       n_iterations = int(arg.replace('n_it=', ''))
 
-  train_and_pickle(target_set, n_iterations)
+  # train_and_pickle(target_set, n_iterations)
+
+  for i in range(4):
+    train_and_pickle(i + 1, n_iterations)

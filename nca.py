@@ -14,12 +14,12 @@ from utils import PicklePersist
 class Model(tf.keras.Model):
 
   @classmethod
-  def standard_model(cls, class_n: int, n_extra_channels: int = 10):
+  def standard_model(cls, class_n: int, n_extra_channels: int = 20, n_filters: int = 80):
     grid_size_x = 9
     grid_size_y = 4
-    return Model(class_n + n_extra_channels, class_n, grid_size_x, grid_size_y)
+    return Model(class_n + n_extra_channels, class_n, grid_size_x, grid_size_y, n_filters)
 
-  def __init__(self, channel_n: int, class_n: int, grid_size_x: int, grid_size_y: int):
+  def __init__(self, channel_n: int, class_n: int, grid_size_x: int, grid_size_y: int, n_filters: int):
     super().__init__()
     self.channel_n = channel_n
     self.class_n = class_n
@@ -27,10 +27,10 @@ class Model(tf.keras.Model):
     self.grid_size_y = grid_size_y
     self.kernel_mask = np.array([[0.0, 1.0, 0.0], [1.0, 1.0, 1.0], [0.0, 1.0, 0.0]])[:, :, np.newaxis, np.newaxis]
     self.perceive = tf.keras.Sequential([
-      Conv2D(30, 3, activation=tf.nn.relu, padding="SAME"),  # (c, 3, 3, 80)
+      Conv2D(n_filters, 3, activation=tf.nn.relu, padding="SAME"),  # (c, 3, 3, 80)
     ])
     self.dmodel = tf.keras.Sequential([
-      Conv2D(30, 1, activation=tf.nn.relu),  # (80, 1, 1, 80)
+      Conv2D(n_filters, 1, activation=tf.nn.relu),  # (80, 1, 1, 80)
       Conv2D(self.channel_n, 1, activation=None, kernel_initializer=tf.zeros_initializer),  # (80, 1, 1, c)
     ])
     self(tf.zeros([self.class_n, self.grid_size_y, self.grid_size_x, self.channel_n]))  # dummy calls to build the model
@@ -61,7 +61,7 @@ class Model(tf.keras.Model):
 class Node:
   def __init__(self, name, pk_self, pk_bottom, pk_left, pk_right, pk_top, perceive_bias, dmodel_kernel_1, dmodel_bias_1,
                dmodel_kernel_2, dmodel_bias_2, n_val: RawArray, e_val: RawArray, s_val: RawArray, w_val: RawArray,
-               own_val: RawArray, n_classes: int = None, n_channels: int = None, n_extra_channels: int = 10):
+               own_val: RawArray, n_classes: int = None, n_channels: int = None, n_extra_channels: int = 20):
     self.name = name
     self.n_channels = n_channels if n_channels is not None else n_classes + n_extra_channels
     self.w_val = w_val
