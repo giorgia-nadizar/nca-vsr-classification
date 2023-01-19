@@ -108,7 +108,7 @@ def setup_nca(shapes, x, n_extra_channels: int, target_set: int):
   return vals, nodes
 
 
-def correct_shapes_classification_csv(n_steps: int = 151, n_snapshots: int = 101, n_extra_channels: int = 20,
+def correct_shapes_classification_csv(n_steps: int = 101, n_snapshots: int = 101, n_extra_channels: int = 20,
                                       deterministic: bool = True,
                                       accuracy_column: bool = True):
   target_sets = range(1, 5)
@@ -141,7 +141,7 @@ def correct_shapes_classification_csv(n_steps: int = 151, n_snapshots: int = 101
 
 def mismatched_shapes_classification_csv(shapes_set: int, nca_set: int, n_steps: int = 101, n_snapshots: int = 101,
                                          n_extra_channels: int = 20, deterministic: bool = True):
-  with open('classifications/mismatched_classification.csv', 'w') as f:
+  with open('classifications/larger_net_mismatched_classification.csv', 'w') as f:
     f.write('shapes_set,shape_id,target_set,closest_shape_id,edit_distance,readable_shape,step,classification,'
             'majority_vote\n')
     shapes = ShapeUtils.load_shapes_from_file('shapes/sample_creatures_set' + str(shapes_set) + '.txt')
