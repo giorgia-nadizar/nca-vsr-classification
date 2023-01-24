@@ -1,8 +1,8 @@
-import bz2
 import _pickle
+import bz2
 import re
+from typing import List
 
-import numpy as np
 from matplotlib import pyplot as plt
 from numpy import median
 from pandas import DataFrame
@@ -62,7 +62,7 @@ class ShapeUtils:
 class PgfplotsUtils:
 
   @staticmethod
-  def line_plot(df: DataFrame, x: str, y: list, groups: list[str], filename: str):
+  def line_plot(df: DataFrame, x: str, y: list, groups: List[str], filename: str):
     def q1(x):
       return x.quantile(0.25)
 
@@ -86,7 +86,7 @@ class PgfplotsUtils:
       tmp.to_csv(f"{current_filename}.txt", sep="\t", index=False)
 
   @staticmethod
-  def box_plot(df: DataFrame, x: str, y: str, groups: list[str], filename: str):
+  def box_plot(df: DataFrame, x: str, y: str, groups: List[str], filename: str):
     key_df = df.drop_duplicates(subset=groups)
     plt.figure(visible=False)
 
