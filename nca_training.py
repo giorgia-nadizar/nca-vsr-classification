@@ -139,7 +139,8 @@ if __name__ == '__main__':
   args = sys.argv[1:]
   for arg in args:
     if arg.startswith('small'):
-      smaller_net = arg.replace('seed=', '').upper().startswith("T")
+      smaller_net = arg.replace('small=', '').upper().startswith("T")
+      print(smaller_net)
     if arg.startswith('all'):
       for target_set in range(1, 5):
         for seed in range(5):
