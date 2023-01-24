@@ -109,7 +109,8 @@ def setup_nca(shapes, x, n_extra_channels: int, target_set: int, seed: int = 0):
 
 
 def correct_shapes_classification_csv(n_steps: int = 101, n_snapshots: int = 101, n_extra_channels: int = 20,
-                                      seeds: list[int] = [0], deterministic: bool = True, accuracy_column: bool = True):
+                                      seeds: List[int] = [0, 1, 2, 3, 4], deterministic: bool = True,
+                                      accuracy_column: bool = True):
   target_sets = range(1, 5)
   with open('classifications/classification.csv', 'w') as f:
     f.write('target_set,shape_id,readable_shape,step,classification,nca_seed')
@@ -140,10 +141,11 @@ def correct_shapes_classification_csv(n_steps: int = 101, n_snapshots: int = 101
 
 
 def mismatched_shapes_classification_csv(shapes_set: int, nca_set: int, n_steps: int = 101, n_snapshots: int = 101,
-                                         n_extra_channels: int = 20, deterministic: bool = True):
+                                         n_extra_channels: int = 20, deterministic: bool = True,
+                                         seeds: List[int] = [0, 1, 2, 3, 4]):
   with open('classifications/mismatched_classification.csv', 'w') as f:
     f.write('shapes_set,shape_id,target_set,closest_shape_id,edit_distance,readable_shape,step,classification,'
-            'majority_vote\n')
+            'majority_vote,nca_seed\n')
     shapes = ShapeUtils.load_shapes_from_file('shapes/sample_creatures_set' + str(shapes_set) + '.txt')
     nca_shapes = ShapeUtils.load_shapes_from_file('shapes/sample_creatures_set' + str(nca_set) + '.txt')
     n_classes = len(nca_shapes)
@@ -156,17 +158,20 @@ def mismatched_shapes_classification_csv(shapes_set: int, nca_set: int, n_steps:
 
       width = len(shape[0])
       height = len(shape)
-      vals, nodes = setup_nca(nca_shapes, shape, n_extra_channels, nca_set)
-      for n in range(n_steps):
-        if deterministic:
-          Node.sync_update_all(nodes)
-        else:
-          Node.stochastic_update(nodes)
-        if n % step == 0:
-          classification_string = string_vals(vals, width, height, n_classes, pretty_print=False, inline=True)
-          _, majority_vote = classification_accuracy(shape_id, classification_string)
-          f.write(f'{shapes_set},{shape_id},{nca_set},{closest_shape_id},{edit_distance},{shape_to_string(shape)},{n},'
-                  f'{classification_string},{majority_vote}\n')
+
+      for seed in seeds:
+        vals, nodes = setup_nca(nca_shapes, shape, n_extra_channels, nca_set, seed=seed)
+        for n in range(n_steps):
+          if deterministic:
+            Node.sync_update_all(nodes)
+          else:
+            Node.stochastic_update(nodes)
+          if n % step == 0:
+            classification_string = string_vals(vals, width, height, n_classes, pretty_print=False, inline=True)
+            _, majority_vote = classification_accuracy(shape_id, classification_string)
+            f.write(
+              f'{shapes_set},{shape_id},{nca_set},{closest_shape_id},{edit_distance},{shape_to_string(shape)},{n},'
+              f'{classification_string},{majority_vote},{seed}\n')
 
 
 def main(sleep: bool, display_transient: bool, target_set: int, target_shape: str, n_steps: int, deterministic: bool,

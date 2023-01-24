@@ -1,6 +1,7 @@
 import random
 import sys
 from multiprocessing import Process
+from typing import List
 
 import matplotlib.pylab as pl
 import numpy as np
@@ -19,7 +20,7 @@ def expand_y_label(x, y):
   return y_res.astype(np.float32)
 
 
-def train(x_train: list[list[list]], num_iterations: int = 1500, seed: int = 0, plots: bool = False,
+def train(x_train: List[List[List]], num_iterations: int = 1500, seed: int = 0, plots: bool = False,
           interval: range = None):
   random.seed(seed)
   np.random.seed(seed)
