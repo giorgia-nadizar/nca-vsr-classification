@@ -141,38 +141,43 @@ def correct_shapes_classification_csv(n_steps: int = 101, n_snapshots: int = 101
               f.write('\n')
 
 
-def mismatched_shapes_classification_csv(shapes_set: int, nca_set: int, n_steps: int = 101, n_snapshots: int = 101,
+def mismatched_shapes_classification_csv(shapes_sets: List[int], nca_sets: List[int], n_steps: int = 101,
+                                         n_snapshots: int = 101,
                                          n_extra_channels: int = 20, deterministic: bool = True,
                                          seeds: List[int] = [0, 1, 2, 3, 4]):
   with open('classifications/mismatched_classification.csv', 'w') as f:
     f.write('shapes_set,shape_id,target_set,closest_shape_id,edit_distance,readable_shape,step,classification,'
             'majority_vote,nca_seed\n')
-    shapes = ShapeUtils.load_shapes_from_file('shapes/sample_creatures_set' + str(shapes_set) + '.txt')
-    nca_shapes = ShapeUtils.load_shapes_from_file('shapes/sample_creatures_set' + str(nca_set) + '.txt')
-    n_classes = len(nca_shapes)
-    step = n_steps // n_snapshots
-    for shape_id, shape in enumerate(shapes):
-      ids_distances = dict(
-        [(idx, compute_edit_distance_between_shapes(nca_shapes[idx], shape)) for idx in range(len(nca_shapes))])
-      closest_shape_id = min(ids_distances, key=ids_distances.get)
-      edit_distance = ids_distances[closest_shape_id]
+    for idx in range(len(shapes_sets)):
+      shapes_set = shapes_sets[idx]
+      nca_set = nca_sets[idx]
 
-      width = len(shape[0])
-      height = len(shape)
+      shapes = ShapeUtils.load_shapes_from_file('shapes/sample_creatures_set' + str(shapes_set) + '.txt')
+      nca_shapes = ShapeUtils.load_shapes_from_file('shapes/sample_creatures_set' + str(nca_set) + '.txt')
+      n_classes = len(nca_shapes)
+      step = n_steps // n_snapshots
+      for shape_id, shape in enumerate(shapes):
+        ids_distances = dict(
+          [(idx, compute_edit_distance_between_shapes(nca_shapes[idx], shape)) for idx in range(len(nca_shapes))])
+        closest_shape_id = min(ids_distances, key=ids_distances.get)
+        edit_distance = ids_distances[closest_shape_id]
 
-      for seed in seeds:
-        vals, nodes = setup_nca(nca_shapes, shape, n_extra_channels, nca_set, seed=seed)
-        for n in range(n_steps):
-          if deterministic:
-            Node.sync_update_all(nodes)
-          else:
-            Node.stochastic_update(nodes)
-          if n % step == 0:
-            classification_string = string_vals(vals, width, height, n_classes, pretty_print=False, inline=True)
-            _, majority_vote = classification_accuracy(shape_id, classification_string)
-            f.write(
-              f'{shapes_set},{shape_id},{nca_set},{closest_shape_id},{edit_distance},{shape_to_string(shape)},{n},'
-              f'{classification_string},{majority_vote},{seed}\n')
+        width = len(shape[0])
+        height = len(shape)
+
+        for seed in seeds:
+          vals, nodes = setup_nca(nca_shapes, shape, n_extra_channels, nca_set, seed=seed)
+          for n in range(n_steps):
+            if deterministic:
+              Node.sync_update_all(nodes)
+            else:
+              Node.stochastic_update(nodes)
+            if n % step == 0:
+              classification_string = string_vals(vals, width, height, n_classes, pretty_print=False, inline=True)
+              _, majority_vote = classification_accuracy(shape_id, classification_string)
+              f.write(
+                f'{shapes_set},{shape_id},{nca_set},{closest_shape_id},{edit_distance},{shape_to_string(shape)},{n},'
+                f'{classification_string},{majority_vote},{seed}\n')
 
 
 def main(sleep: bool, display_transient: bool, target_set: int, target_shape: str, n_steps: int, deterministic: bool,
@@ -212,7 +217,7 @@ if __name__ == '__main__':
   args = sys.argv[1:]
   for arg in args:
     if arg.startswith('csv_mismatch'):
-      mismatched_shapes_classification_csv(3, 1)
+      mismatched_shapes_classification_csv([3, 4], [1, 2])
       exit(0)
     if arg.startswith('csv'):
       correct_shapes_classification_csv()
