@@ -1,6 +1,7 @@
 import random
 import sys
 from multiprocessing import Process
+from typing import List
 
 import matplotlib.pylab as pl
 import numpy as np
@@ -19,13 +20,14 @@ def expand_y_label(x, y):
   return y_res.astype(np.float32)
 
 
-def train(x_train: list[list[list]], num_iterations: int = 1500, seed: int = 0, plots: bool = False,
-          interval: range = None):
+def train(x_train: List[List[List]], num_iterations: int = 1500, seed: int = 0, plots: bool = False,
+          interval: range = None, smaller_net: bool = False):
   random.seed(seed)
   np.random.seed(seed)
   tf.random.set_seed(seed)
 
-  model = Model.standard_model(len(x_train))
+  model = Model.standard_model(class_n=len(x_train), n_extra_channels=10,
+                               n_filters=30) if smaller_net else Model.standard_model(class_n=len(x_train))
   x_train = np.array(x_train).astype(np.float32)
   y_train = np.array(list(range(len(x_train))))
   y_train = expand_y_label(x_train, y_train)
@@ -98,12 +100,13 @@ def train(x_train: list[list[list]], num_iterations: int = 1500, seed: int = 0, 
 
 
 def train_and_pickle(set_number: int, num_iterations: int = 1500, seed: int = 0, save_progress=True,
-                     interval=range(25, 50)):
+                     interval=range(25, 50), smaller_net: bool = False):
   shapes = ShapeUtils.load_shapes_from_file(f'shapes/sample_creatures_set{str(set_number)}.txt')
-  model, losses, accuracies = train(shapes, num_iterations, seed=seed, plots=False, interval=interval)
+  model, losses, accuracies = train(shapes, num_iterations, seed=seed, plots=False, interval=interval,
+                                    smaller_net=smaller_net)
 
   if save_progress:
-    with open(f'training/progress_seed_{seed}_{set_number}.txt', 'w') as f:
+    with open(f'training/progress{"_small" if smaller_net else ""}_seed_{seed}_{set_number}.txt', 'w') as f:
       f.write('iteration;loss;accuracy\n')
       for iteration in range(num_iterations):
         f.write(f'{iteration};{losses[iteration].numpy()};{accuracies[iteration]}\n')
@@ -123,16 +126,25 @@ def train_and_pickle(set_number: int, num_iterations: int = 1500, seed: int = 0,
     'pk_self': perceive_kernel[1][1][:][:],
     'pk_top': perceive_kernel[0][1][:][:]
   }
-  PicklePersist.compress_pickle(f'parameters/params_seed{seed}_set{str(set_number)}', data=dictionary)
+  PicklePersist.compress_pickle(f'parameters/params{"_small" if smaller_net else ""}_seed{seed}_set{str(set_number)}',
+                                data=dictionary)
 
 
 if __name__ == '__main__':
   target_set = 1
   n_iterations = 1500
   seed = 0
+  smaller_net = False
 
   args = sys.argv[1:]
   for arg in args:
+    if arg.startswith('small'):
+      smaller_net = arg.replace('seed=', '').upper().startswith("T")
+    if arg.startswith('all'):
+      for target_set in range(1, 5):
+        for seed in range(5):
+          print(f"SET {target_set} - SEED {seed}")
+          train_and_pickle(target_set, n_iterations, seed, smaller_net)
     if arg.startswith('set'):
       target_set = int(arg.replace('set=', ''))
     if arg.startswith('n_it'):
@@ -140,4 +152,4 @@ if __name__ == '__main__':
     if arg.startswith('seed'):
       seed = int(arg.replace('seed=', ''))
 
-  train_and_pickle(target_set, n_iterations, seed)
+    train_and_pickle(target_set, n_iterations, seed, smaller_net)
