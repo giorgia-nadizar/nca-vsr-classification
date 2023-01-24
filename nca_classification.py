@@ -83,7 +83,7 @@ def string_vals(vals, width: int, height: int, n_classes: int, pretty_print: boo
     return '\n'.join(values)
 
 
-def setup_nca(shapes, x, n_extra_channels: int, target_set: int):
+def setup_nca(shapes, x, n_extra_channels: int, target_set: int, seed: int = 0):
   n_classes = len(shapes)
   width = len(x[0])
   height = len(x)
@@ -100,7 +100,7 @@ def setup_nca(shapes, x, n_extra_channels: int, target_set: int):
   for i in range(height):
     for j in range(width):
       if x[i][j] == 1:
-        node = Node.from_pickle("%d%d" % (i, j), 'parameters/larger_net_params_set' + str(target_set) + '.pbz2',
+        node = Node.from_pickle("%d%d" % (i, j), f'parameters/params_seed{seed}_set{str(target_set)}.pbz2',
                                 vals[i - 1][j] if i > 0 else None, vals[i][j + 1] if j < width - 1 else None,
                                 vals[i + 1][j] if i < height - 1 else None, vals[i][j - 1] if j > 0 else None,
                                 vals[i][j], n_classes=n_classes)
@@ -109,39 +109,39 @@ def setup_nca(shapes, x, n_extra_channels: int, target_set: int):
 
 
 def correct_shapes_classification_csv(n_steps: int = 101, n_snapshots: int = 101, n_extra_channels: int = 20,
-                                      deterministic: bool = True,
-                                      accuracy_column: bool = True):
+                                      seeds: list[int] = [0], deterministic: bool = True, accuracy_column: bool = True):
   target_sets = range(1, 5)
-  with open('classifications/larger_net_classification.csv', 'w') as f:
-    f.write('target_set,shape_id,readable_shape,step,classification')
+  with open('classifications/classification.csv', 'w') as f:
+    f.write('target_set,shape_id,readable_shape,step,classification,nca_seed')
     if accuracy_column:
       f.write(',accuracy,majority_vote')
     f.write('\n')
-    for target_set in target_sets:
-      shapes = ShapeUtils.load_shapes_from_file('shapes/sample_creatures_set' + str(target_set) + '.txt')
-      n_classes = len(shapes)
-      step = n_steps // n_snapshots
-      for shape_id, shape in enumerate(shapes):
-        width = len(shape[0])
-        height = len(shape)
-        vals, nodes = setup_nca(shapes, shape, n_extra_channels, target_set)
-        for n in range(n_steps):
-          if deterministic:
-            Node.sync_update_all(nodes)
-          else:
-            Node.stochastic_update(nodes)
-          if n % step == 0:
-            classification_string = string_vals(vals, width, height, n_classes, pretty_print=False, inline=True)
-            f.write(f'{target_set},{shape_id},{shape_to_string(shape)},{n},{classification_string}')
-            if accuracy_column:
-              accuracy, majority_vote = classification_accuracy(shape_id, classification_string)
-              f.write(f',{accuracy},{majority_vote}')
-            f.write('\n')
+    for seed in seeds:
+      for target_set in target_sets:
+        shapes = ShapeUtils.load_shapes_from_file('shapes/sample_creatures_set' + str(target_set) + '.txt')
+        n_classes = len(shapes)
+        step = n_steps // n_snapshots
+        for shape_id, shape in enumerate(shapes):
+          width = len(shape[0])
+          height = len(shape)
+          vals, nodes = setup_nca(shapes, shape, n_extra_channels, target_set, seed)
+          for n in range(n_steps):
+            if deterministic:
+              Node.sync_update_all(nodes)
+            else:
+              Node.stochastic_update(nodes)
+            if n % step == 0:
+              classification_string = string_vals(vals, width, height, n_classes, pretty_print=False, inline=True)
+              f.write(f'{target_set},{shape_id},{shape_to_string(shape)},{n},{classification_string},{seed}')
+              if accuracy_column:
+                accuracy, majority_vote = classification_accuracy(shape_id, classification_string)
+                f.write(f',{accuracy},{majority_vote}')
+              f.write('\n')
 
 
 def mismatched_shapes_classification_csv(shapes_set: int, nca_set: int, n_steps: int = 101, n_snapshots: int = 101,
                                          n_extra_channels: int = 20, deterministic: bool = True):
-  with open('classifications/larger_net_mismatched_classification.csv', 'w') as f:
+  with open('classifications/mismatched_classification.csv', 'w') as f:
     f.write('shapes_set,shape_id,target_set,closest_shape_id,edit_distance,readable_shape,step,classification,'
             'majority_vote\n')
     shapes = ShapeUtils.load_shapes_from_file('shapes/sample_creatures_set' + str(shapes_set) + '.txt')

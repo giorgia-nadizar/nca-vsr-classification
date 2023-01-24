@@ -1,5 +1,6 @@
 import random
 import sys
+from multiprocessing import Process
 
 import matplotlib.pylab as pl
 import numpy as np
@@ -18,7 +19,12 @@ def expand_y_label(x, y):
   return y_res.astype(np.float32)
 
 
-def train(x_train: list[list[list]], num_iterations: int = 1500, plots: bool = False, interval: range = None):
+def train(x_train: list[list[list]], num_iterations: int = 1500, seed: int = 0, plots: bool = False,
+          interval: range = None):
+  random.seed(seed)
+  np.random.seed(seed)
+  tf.random.set_seed(seed)
+
   model = Model.standard_model(len(x_train))
   x_train = np.array(x_train).astype(np.float32)
   y_train = np.array(list(range(len(x_train))))
@@ -91,12 +97,13 @@ def train(x_train: list[list[list]], num_iterations: int = 1500, plots: bool = F
   return model, losses, accuracies
 
 
-def train_and_pickle(set_number: int, num_iterations: int = 1500, save_progress=True, interval=range(25, 50)):
-  shapes = ShapeUtils.load_shapes_from_file('shapes/sample_creatures_set' + str(set_number) + '.txt')
-  model, losses, accuracies = train(shapes, num_iterations, plots=False, interval=interval)
+def train_and_pickle(set_number: int, num_iterations: int = 1500, seed: int = 0, save_progress=True,
+                     interval=range(25, 50)):
+  shapes = ShapeUtils.load_shapes_from_file(f'shapes/sample_creatures_set{str(set_number)}.txt')
+  model, losses, accuracies = train(shapes, num_iterations, seed=seed, plots=False, interval=interval)
 
   if save_progress:
-    with open(f'training/larger_net_progress_{set_number}.txt', 'w') as f:
+    with open(f'training/progress_seed_{seed}_{set_number}.txt', 'w') as f:
       f.write('iteration;loss;accuracy\n')
       for iteration in range(num_iterations):
         f.write(f'{iteration};{losses[iteration].numpy()};{accuracies[iteration]}\n')
@@ -116,12 +123,13 @@ def train_and_pickle(set_number: int, num_iterations: int = 1500, save_progress=
     'pk_self': perceive_kernel[1][1][:][:],
     'pk_top': perceive_kernel[0][1][:][:]
   }
-  PicklePersist.compress_pickle('parameters/larger_net_params_set' + str(set_number), data=dictionary)
+  PicklePersist.compress_pickle(f'parameters/params_seed{seed}_set{str(set_number)}', data=dictionary)
 
 
 if __name__ == '__main__':
   target_set = 1
   n_iterations = 1500
+  seed = 0
 
   args = sys.argv[1:]
   for arg in args:
@@ -129,8 +137,7 @@ if __name__ == '__main__':
       target_set = int(arg.replace('set=', ''))
     if arg.startswith('n_it'):
       n_iterations = int(arg.replace('n_it=', ''))
+    if arg.startswith('seed'):
+      seed = int(arg.replace('seed=', ''))
 
-  # train_and_pickle(target_set, n_iterations)
-
-  for i in range(4):
-    train_and_pickle(i + 1, n_iterations)
+  train_and_pickle(target_set, n_iterations, seed)
