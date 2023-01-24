@@ -100,7 +100,8 @@ def setup_nca(shapes, x, n_extra_channels: int, target_set: int, seed: int = 0):
   for i in range(height):
     for j in range(width):
       if x[i][j] == 1:
-        node = Node.from_pickle("%d%d" % (i, j), f'parameters/params_seed{seed}_set{str(target_set)}.pbz2',
+        node = Node.from_pickle("%d%d" % (i, j),
+                                f'parameters/params{"_small" if n_extra_channels == 10 else ""}_seed{seed}_set{str(target_set)}.pbz2',
                                 vals[i - 1][j] if i > 0 else None, vals[i][j + 1] if j < width - 1 else None,
                                 vals[i + 1][j] if i < height - 1 else None, vals[i][j - 1] if j > 0 else None,
                                 vals[i][j], n_classes=n_classes)
@@ -112,7 +113,7 @@ def correct_shapes_classification_csv(n_steps: int = 101, n_snapshots: int = 101
                                       seeds: List[int] = [0, 1, 2, 3, 4], deterministic: bool = True,
                                       accuracy_column: bool = True):
   target_sets = range(1, 5)
-  with open('classifications/classification.csv', 'w') as f:
+  with open(f'classifications/classification{"_small" if n_extra_channels == 10 else ""}.csv', 'w') as f:
     f.write('target_set,shape_id,readable_shape,step,classification,nca_seed')
     if accuracy_column:
       f.write(',accuracy,majority_vote')
