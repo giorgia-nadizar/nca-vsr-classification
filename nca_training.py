@@ -140,12 +140,11 @@ if __name__ == '__main__':
   for arg in args:
     if arg.startswith('small'):
       smaller_net = arg.replace('small=', '').upper().startswith("T")
-      print(smaller_net)
     if arg.startswith('all'):
       for target_set in range(1, 5):
         for seed in range(5):
           print(f"SET {target_set} - SEED {seed}")
-          train_and_pickle(target_set, n_iterations, seed, smaller_net)
+          train_and_pickle(target_set, n_iterations, seed, smaller_net=smaller_net)
     if arg.startswith('set'):
       target_set = int(arg.replace('set=', ''))
     if arg.startswith('n_it'):
@@ -153,4 +152,4 @@ if __name__ == '__main__':
     if arg.startswith('seed'):
       seed = int(arg.replace('seed=', ''))
 
-    train_and_pickle(target_set, n_iterations, seed, smaller_net)
+    train_and_pickle(target_set, n_iterations, seed, smaller_net=smaller_net)
