@@ -83,7 +83,7 @@ class Node:
 
   @classmethod
   def from_pickle(cls, name: str, filename: str, n_val: RawArray, e_val: RawArray, s_val: RawArray, w_val: RawArray,
-                  own_val: RawArray, n_classes: int):
+                  own_val: RawArray, n_classes: int, n_extra_channels: int = 20):
     dictionary = PicklePersist.decompress_pickle(filename)
     pk_self = dictionary['pk_self']
     pk_bottom = dictionary['pk_bottom']
@@ -96,7 +96,8 @@ class Node:
     dmodel_kernel_2 = dictionary['dmodel_kernel_2']
     dmodel_bias_2 = dictionary['dmodel_bias_2']
     return Node(name, pk_self, pk_bottom, pk_left, pk_right, pk_top, perceive_bias, dmodel_kernel_1, dmodel_bias_1,
-                dmodel_kernel_2, dmodel_bias_2, n_val, e_val, s_val, w_val, own_val, n_classes=n_classes)
+                dmodel_kernel_2, dmodel_bias_2, n_val, e_val, s_val, w_val, own_val, n_classes=n_classes,
+                n_extra_channels=n_extra_channels)
 
   @staticmethod
   def sync_update_all(nodes: list[Node]):
