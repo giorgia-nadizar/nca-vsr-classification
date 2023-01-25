@@ -104,7 +104,7 @@ def setup_nca(shapes, x, n_extra_channels: int, target_set: int, seed: int = 0):
                                 f'parameters/params{"_small" if n_extra_channels == 10 else ""}_seed{seed}_set{str(target_set)}.pbz2',
                                 vals[i - 1][j] if i > 0 else None, vals[i][j + 1] if j < width - 1 else None,
                                 vals[i + 1][j] if i < height - 1 else None, vals[i][j - 1] if j > 0 else None,
-                                vals[i][j], n_classes=n_classes)
+                                vals[i][j], n_classes=n_classes, n_extra_channels=n_extra_channels)
         nodes.append(node)
   return vals, nodes
 
@@ -142,8 +142,7 @@ def correct_shapes_classification_csv(n_steps: int = 101, n_snapshots: int = 101
 
 
 def mismatched_shapes_classification_csv(shapes_sets: List[int], nca_sets: List[int], n_steps: int = 101,
-                                         n_snapshots: int = 101,
-                                         n_extra_channels: int = 20, deterministic: bool = True,
+                                         n_snapshots: int = 101, n_extra_channels: int = 20, deterministic: bool = True,
                                          seeds: List[int] = [0, 1, 2, 3, 4]):
   with open('classifications/mismatched_classification.csv', 'w') as f:
     f.write('shapes_set,shape_id,target_set,closest_shape_id,edit_distance,readable_shape,step,classification,'
