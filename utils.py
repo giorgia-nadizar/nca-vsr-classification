@@ -62,7 +62,7 @@ class ShapeUtils:
 class PgfplotsUtils:
 
   @staticmethod
-  def line_plot(df: DataFrame, x: str, y: list, groups: List[str], filename: str):
+  def line_plot(filename: str, df: DataFrame, x: str, y: list, groups: List[str] = None):
     def q1(x):
       return x.quantile(0.25)
 
@@ -86,31 +86,39 @@ class PgfplotsUtils:
       tmp.to_csv(f"{current_filename}.txt", sep="\t", index=False)
 
   @staticmethod
-  def box_plot(df: DataFrame, x: str, y: str, groups: List[str], filename: str):
-    key_df = df.drop_duplicates(subset=groups)
+  def box_plot(filename: str, df: DataFrame, x: str, y: str, groups: List[str] = None):
+    if groups is None or len(groups) == 0:
+      PgfplotsUtils.__box_plot(df, x, y, filename)
+
+    else:
+      key_df = df.drop_duplicates(subset=groups)
+
+      for i in range(len(key_df)):
+        tmp = df
+        current_filename = filename
+        for key in groups:
+          tmp = tmp[tmp[key] == key_df[key].iloc[i]]
+          current_filename += f"_{key_df[key].iloc[i]}"
+
+        PgfplotsUtils.__box_plot(tmp, x, y, current_filename)
+
+  @staticmethod
+  def __box_plot(df: DataFrame, x: str, y: str, filename: str):
     plt.figure(visible=False)
+    data = []
+    for xi in df[x].unique():
+      data.append([k for k in df[df[x] == xi][y] if str(k) != "nan"])
 
-    for i in range(len(key_df)):
-      tmp = df
-      current_filename = filename
-      for key in groups:
-        tmp = tmp[tmp[key] == key_df[key].iloc[i]]
-        current_filename += f"_{key_df[key].iloc[i]}"
+    bp = plt.boxplot(data, showmeans=False)
 
-      data = []
-      for xi in tmp[x].unique():
-        data.append([k for k in tmp[tmp[x] == xi][y] if str(k) != "nan"])
+    minimums = [round(item.get_ydata()[0], 1) for item in bp['caps']][::2]
+    q1 = [round(min(item.get_ydata()), 1) for item in bp['boxes']]
+    medians = [item.get_ydata()[0] for item in bp['medians']]
+    q3 = [round(max(item.get_ydata()), 1) for item in bp['boxes']]
+    maximums = [round(item.get_ydata()[0], 1) for item in bp['caps']][1::2]
 
-      bp = plt.boxplot(data, showmeans=False)
+    rows = [df[x].unique().tolist(), minimums, q1, medians, q3, maximums]
 
-      minimums = [round(item.get_ydata()[0], 1) for item in bp['caps']][::2]
-      q1 = [round(min(item.get_ydata()), 1) for item in bp['boxes']]
-      medians = [item.get_ydata()[0] for item in bp['medians']]
-      q3 = [round(max(item.get_ydata()), 1) for item in bp['boxes']]
-      maximums = [round(item.get_ydata()[0], 1) for item in bp['caps']][1::2]
-
-      rows = [tmp[x].unique().tolist(), minimums, q1, medians, q3, maximums]
-
-      with open(f"{current_filename}.txt", "w") as bp_file:
-        for row in rows:
-          bp_file.write("\t".join(map(str, row)) + "\n")
+    with open(f"{filename}.txt", "w") as bp_file:
+      for row in rows:
+        bp_file.write("\t".join(map(str, row)) + "\n")
